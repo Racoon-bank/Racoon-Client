@@ -23,31 +23,25 @@ struct LoginView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            header
+           VStack(spacing: 16) {
+               header
 
-            VStack(spacing: 12) {
-                emailField
-                passwordField
-            }
+               VStack(spacing: 12) {
+                   emailField
+                   passwordField
+               }
 
-            submitButton
+               submitButton
 
-            Spacer(minLength: 0)
-        }
-        .padding(20)
-        .navigationTitle("Sign in")
-        .navigationBarTitleDisplayMode(.large)
-        .onAppear { focusedField = .email }
-        .alert("Error", isPresented: Binding(
-            get: { viewModel.state.errorMessage != nil },
-            set: { newValue in if !newValue { viewModel.clearError() } }
-        )) {
-            Button("OK", role: .cancel) { viewModel.clearError() }
-        } message: {
-            Text(viewModel.state.errorMessage ?? "")
-        }
-    }
+               Spacer(minLength: 0)
+           }
+           .padding(20)
+           .navigationTitle("Sign in")
+           .navigationBarTitleDisplayMode(.large)
+           .onAppear { focusedField = .email }
+           
+           .errorAlert(errorMessage: viewModel.state.errorMessage, clearError: { viewModel.clearError() })
+       }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {

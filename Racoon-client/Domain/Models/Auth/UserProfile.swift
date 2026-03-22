@@ -11,4 +11,5 @@ public struct UserProfile: Sendable, Equatable {
     public let id: UUID
     public let username: String
     public let email: String
+    public let theme: Theme
 }

@@ -10,9 +10,10 @@ import Foundation
 enum UserProfileMapper {
     static func toDomain(_ dto: UserProfileDto) -> UserProfile {
         UserProfile(
-            id: UUID(uuidString: dto.id) ?? UUID(),
-            username: dto.username,
-            email: dto.email
+            id: dto.id,
+            username: dto.username ?? "",
+            email: dto.email ?? "",
+            theme: dto.theme ?? .Light
         )
     }
 }

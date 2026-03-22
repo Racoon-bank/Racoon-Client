@@ -8,8 +8,6 @@
 
 import Foundation
 
-import Foundation
-
 public final class AppContainer: @unchecked Sendable {
     public static let shared = AppContainer()
 
@@ -23,7 +21,9 @@ public final class AppContainer: @unchecked Sendable {
 
     public let recentCreditsStore: RecentCreditsStore
     public let eventBus: DomainEventBus
-
+    public let appErrorBus: AppErrorBus
+    public let appErrorMapper: AppErrorMapper
+    
     public let coreAuthRepository: any CoreAuthRepository
     public let tokenRefresher: any TokenRefresher
 
@@ -42,6 +42,7 @@ public final class AppContainer: @unchecked Sendable {
     public let depositUseCase: DepositUseCase
     public let withdrawUseCase: WithdrawUseCase
     public let getAccountHistoryUseCase: GetAccountHistoryUseCase
+    public let bankHubClient: BankHubClient
 
     public let getMyCreditsUseCase: GetMyCreditsUseCase
     public let getCreditTariffsUseCase: GetCreditTariffsUseCase
@@ -53,6 +54,11 @@ public final class AppContainer: @unchecked Sendable {
     public let getCreditUseCase: GetCreditUseCase
     public let getCreditPaymentsUseCase: GetCreditPaymentsUseCase
 
+    public let appSettingsStorage: AppSettingsStorage
+    public let loadAppSettingsUseCase: LoadAppSettingsUseCase
+    public let setThemeUseCase: SetThemeUseCase
+    public let toggleHiddenAccountUseCase: ToggleHiddenAccountUseCase
+    
     private init() {
         self.env = NetworkEnvironment.fromBuildConfig()
         self.networkingAssembly = NetworkingAssembly(env: env)
@@ -61,11 +67,12 @@ public final class AppContainer: @unchecked Sendable {
         self.tokenStore = networkingAssembly.makeTokenStore()
         self.recentCreditsStore = UserDefaultsRecentCreditsStore()
         self.eventBus = InMemoryDomainEventBus()
+        self.appErrorBus = InMemoryAppErrorBus()
+        self.appErrorMapper = AppErrorMapper()
+        
 
         self.bareHTTP = networkingAssembly.makeBareHTTPClient()
 
-//        switch AppRuntimeConfig.current().mode {
-//        case .live: do {
             let authLive = repositoriesAssembly.makeCoreAuthRepository(
                 bareClient: bareHTTP,
                 tokenStore: tokenStore
@@ -74,31 +81,17 @@ public final class AppContainer: @unchecked Sendable {
             self.coreAuthRepository = authLive
             self.tokenRefresher = authLive
 
-            self.authedHTTP = networkingAssembly.makeAuthedHTTPClient(
-                tokenStore: tokenStore,
-                tokenRefresher: tokenRefresher
-            )
+        self.authedHTTP = networkingAssembly.makeAuthedHTTPClient(
+            tokenStore: tokenStore,
+            tokenRefresher: tokenRefresher,
+            appErrorBus: appErrorBus
+        )
 
             self.coreBankAccountRepository = repositoriesAssembly.makeCoreBankAccountRepository(authedClient: authedHTTP)
             self.infoUserRepository = repositoriesAssembly.makeInfoUserRepository(authedClient: authedHTTP)
             self.creditRepository = repositoriesAssembly.makeCreditRepository(authedClient: authedHTTP)
-//        }
-//
-//        case .mock: do {
-//            let authMock = CoreAuthRepositoryMock(tokenStore: tokenStore)
-//            self.coreAuthRepository = authMock
-//            self.tokenRefresher = authMock
-//
-//            self.authedHTTP = networkingAssembly.makeAuthedHTTPClient(
-//                tokenStore: tokenStore,
-//                tokenRefresher: tokenRefresher
-//            )
-//
-//            self.coreBankAccountRepository = CoreBankAccountRepositoryMock()
-//            self.infoUserRepository = InfoUserRepositoryMock()
-//            self.creditRepository = CreditRepositoryMock()
-//        }
-//        }
+
+        self.bankHubClient = networkingAssembly.makeBankHubClient(tokenStore: tokenStore)
 
         let useCases = UseCasesAssembly(
             authRepo: coreAuthRepository,
@@ -130,5 +123,16 @@ public final class AppContainer: @unchecked Sendable {
         self.repayCreditUseCase = useCases.makeRepayCreditUseCase()
         self.getCreditUseCase = useCases.makeGetCreditUseCase()
         self.getCreditPaymentsUseCase = useCases.makeGetCreditPaymentsUseCase()
+        
+        self.appSettingsStorage = UserDefaultsAppSettingsStorage()
+        self.loadAppSettingsUseCase = LoadAppSettingsUseCaseMock()
+        self.setThemeUseCase = SetThemeUseCaseImpl(
+            storage: appSettingsStorage,
+            events: eventBus
+        )
+        self.toggleHiddenAccountUseCase = ToggleHiddenAccountUseCaseImpl(
+            storage: appSettingsStorage,
+            events: eventBus
+        )
     }
 }

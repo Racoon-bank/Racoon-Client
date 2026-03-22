@@ -11,10 +11,6 @@ public final class CoreBankAccountRepositoryLive: CoreBankAccountRepository {
     private let client: HTTPClient
     public init(client: HTTPClient) { self.client = client }
 
-    public func openAccount() async throws -> BankAccountDto {
-        try await client.send(CoreRouter.openAccount, as: BankAccountDto.self)
-    }
-
     public func closeAccount(id: UUID) async throws {
         try await client.sendNoResponse(CoreRouter.closeAccount(id: id))
     }
@@ -34,4 +30,18 @@ public final class CoreBankAccountRepositoryLive: CoreBankAccountRepository {
     public func history(id: UUID) async throws -> [BankAccountOperationDto] {
         try await client.send(CoreRouter.history(id: id), as: [BankAccountOperationDto].self)
     }
+    public func openAccount(currency: String) async throws -> BankAccountDto {
+            try await client.send(CoreRouter.openAccount(currency: currency), as: BankAccountDto.self)
+        }
+
+        public func changeVisibility(id: UUID) async throws {
+            try await client.sendNoResponse(CoreRouter.changeVisibility(id: id))
+        }
+        
+        public func transfer(fromAccountId: UUID, toAccountNumber: String?, amount: Double) async throws -> BankAccountDto {
+            try await client.send(
+                CoreRouter.transfer(fromAccountId: fromAccountId, toAccountNumber: toAccountNumber, amount: amount),
+                as: BankAccountDto.self
+            )
+        }
 }

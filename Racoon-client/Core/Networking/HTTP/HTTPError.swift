@@ -11,6 +11,8 @@ public enum NetworkError: Error, Sendable {
     case invalidURL
     case invalidResponse
     case unauthorized
+    case transport(URLError)
+    case unknown
     case httpStatus(code: Int, body: Data)
     case decoding(Error)
     case emptyBody

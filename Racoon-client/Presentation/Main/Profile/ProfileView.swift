@@ -36,13 +36,6 @@ struct ProfileView: View {
         }
         .navigationTitle("Profile")
         .task { await viewModel.load() }
-        .alert("Error", isPresented: Binding(
-            get: { viewModel.state.errorMessage != nil },
-            set: { newValue in if !newValue { viewModel.clearError() } }
-        )) {
-            Button("OK", role: .cancel) { viewModel.clearError() }
-        } message: {
-            Text(viewModel.state.errorMessage ?? "")
-        }
+        .errorAlert(errorMessage: viewModel.state.errorMessage, clearError: { viewModel.clearError() })
     }
 }

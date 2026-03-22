@@ -10,19 +10,33 @@ import SwiftUI
 @main
 struct Racoon_clientApp: App {
     @StateObject private var appState: AppState
-       private let container: AppContainer
+    @StateObject private var appSettingsStore: AppSettingsStore
 
-       init() {
-           let container = AppContainer.shared
-           self.container = container
-           _appState = StateObject(wrappedValue: AppState(container: container))
-       }
+    private let container: AppContainer
 
-       var body: some Scene {
-           WindowGroup {
-               RootView()
-                   .environment(\.appContainer, container)
-                   .environmentObject(appState)
-           }
-       }
-   }
+    init() {
+        let container = AppContainer.shared
+        self.container = container
+
+        _appState = StateObject(wrappedValue: AppState(container: container))
+        _appSettingsStore = StateObject(
+            wrappedValue: AppSettingsStore(
+                storage: container.appSettingsStorage,
+                loadRemote: container.loadAppSettingsUseCase
+            )
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+                .environment(\.appContainer, container)
+                .environmentObject(appState)
+                .environmentObject(appSettingsStore)
+                .preferredColorScheme(appSettingsStore.settings.theme.colorScheme)
+                .task {
+                    await appSettingsStore.bootstrap()
+                }
+        }
+    }
+}
