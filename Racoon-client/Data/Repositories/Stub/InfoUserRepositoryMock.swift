@@ -8,10 +8,10 @@
 
 import Foundation
 
-public final class InfoUserRepositoryMock: InfoUserRepository {
-    public init() {}
-
-    public func profile() async throws -> UserProfileDto {
-        UserProfileDto(id: UUID().uuidString, username: "Demo User", email: "demo@local.mock")
-    }
-}
+//public final class InfoUserRepositoryMock: InfoUserRepository {
+//    public init() {}
+//
+//    public func profile() async throws -> UserProfileDto {
+//        UserProfileDto(id: UUID().uuidString, username: "Demo User", email: "demo@local.mock")
+//    }
+//}

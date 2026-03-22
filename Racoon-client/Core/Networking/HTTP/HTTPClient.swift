@@ -83,9 +83,17 @@ public final class HTTPClient: @unchecked Sendable {
     // MARK: - Internals
 
     private func perform<T: Decodable>(_ request: URLRequest, decodeAs: T.Type) async throws -> T {
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
 
-        // Log every response (success or failure)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let urlError as URLError {
+            throw NetworkError.transport(urlError)
+        } catch {
+            throw NetworkError.unknown
+        }
+
         logger?.logResponse(request: request, response: response, data: data)
 
         try validate(response: response, data: data)
@@ -101,7 +109,6 @@ public final class HTTPClient: @unchecked Sendable {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
-            // Log raw body so you can see which field breaks decoding
             #if DEBUG
             print("❌ Decoding \(T.self) failed:", error)
             if let s = String(data: data, encoding: .utf8) {

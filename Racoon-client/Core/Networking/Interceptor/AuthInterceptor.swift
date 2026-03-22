@@ -11,14 +11,17 @@ public final class AuthInterceptor: HTTPInterceptor {
     private let tokenStore: TokenStore
     private let refresher: TokenRefresher
     private let coordinator: RefreshCoordinator
+    private let appErrorBus: AppErrorBus
 
     public init(
         tokenStore: TokenStore,
         refresher: TokenRefresher,
+        appErrorBus: AppErrorBus,
         coordinator: RefreshCoordinator = RefreshCoordinator()
     ) {
         self.tokenStore = tokenStore
         self.refresher = refresher
+        self.appErrorBus = appErrorBus
         self.coordinator = coordinator
     }
 
@@ -46,6 +49,15 @@ public final class AuthInterceptor: HTTPInterceptor {
             return retried
         } catch {
             await tokenStore.clearTokens()
+
+            appErrorBus.post(
+                AppErrorState(
+                    title: "Session expired",
+                    message: "Please sign in again.",
+                    kind: .forceLogout
+                )
+            )
+
             return nil
         }
     }

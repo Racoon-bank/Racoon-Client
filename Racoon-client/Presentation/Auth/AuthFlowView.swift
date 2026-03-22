@@ -8,7 +8,6 @@
 
 import SwiftUI
 
-import SwiftUI
 
 struct AuthFlowView: View {
     @Environment(\.appContainer) private var container
@@ -17,10 +16,7 @@ struct AuthFlowView: View {
     var body: some View {
         NavigationStack {
             let factory = ViewModelFactory(container: container)
-            AuthLandingView(
-                loginViewModel: factory.makeLoginViewModel(appState: appState),
-                registerViewModel: factory.makeRegisterViewModel(appState: appState)
-            )
+            LoginView(viewModel: factory.makeLoginViewModel(appState: appState))
         }
     }
 }

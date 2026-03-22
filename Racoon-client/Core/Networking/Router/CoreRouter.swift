@@ -8,7 +8,6 @@
 import Foundation
 
 public enum CoreRouter: APIRouter {
-    case openAccount
     case closeAccount(id: UUID)
     case myAccounts
     case deposit(id: UUID, amount: Double)
@@ -18,11 +17,39 @@ public enum CoreRouter: APIRouter {
     case login(email: String, password: String)
     case refresh(refreshToken: String)
     case logout
+    case openAccount(currency: String)
+       case changeVisibility(id: UUID)
+       case transfer(fromAccountId: UUID, toAccountNumber: String?, amount: Double)
 
     public var endpoint: Endpoint {
         switch self {
-        case .openAccount:
-            return Endpoint(service: .core,method: .POST, path: "/api/bank-accounts")
+        case .openAccount(let currency):
+                    return Endpoint(
+                        service: .core,
+                        method: .POST,
+                        path: "/api/bank-accounts",
+                        body: .json(CreateBankAccountDto(currency: currency))
+                    )
+                    
+                case .changeVisibility(let id):
+                    return Endpoint(
+                        service: .core,
+                        method: .PUT,
+                        path: "/api/bank-accounts/\(id.uuidString)"
+                    )
+                    
+                case .transfer(let fromAccountId, let toAccountNumber, let amount):
+                    return Endpoint(
+                        service: .core,
+                        method: .PUT,
+                        path: "/api/bank-accounts/transfer",
+                        body: .json(TransferDto(
+                            fromAccountId: fromAccountId,
+                            toAccountNumber: toAccountNumber,
+                            amount: amount
+                        ))
+                    )
+                
 
         case .closeAccount(let id):
             return Endpoint(service: .core,method: .DELETE, path: "/api/bank-accounts/\(id.uuidString)")

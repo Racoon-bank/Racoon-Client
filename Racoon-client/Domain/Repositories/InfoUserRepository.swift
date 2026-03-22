@@ -8,4 +8,5 @@
 
 public protocol InfoUserRepository: Sendable {
     func profile() async throws -> UserProfileDto
+    func switchTheme() async throws
 }

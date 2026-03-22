@@ -26,7 +26,7 @@ struct AccountDetailsView: View {
         List {
             Section("Account") {
                 LabeledContent("ID", value: accountId.uuidString.prefix(8) + "…")
-                LabeledContent("Balance", value: formatMoney(viewModel.account?.balance))
+                LabeledContent("Balance", value: Formatters.money(viewModel.account?.balance))
             }
 
             Section {
@@ -92,19 +92,7 @@ struct AccountDetailsView: View {
         } message: {
             Text("All the money left on the account will be donated to poor HITs students.")
         }
-        .alert("Error", isPresented: Binding(
-            get: { viewModel.state.errorMessage != nil },
-            set: { newValue in if !newValue { viewModel.clearError() } }
-        )) {
-            Button("OK", role: .cancel) { viewModel.clearError() }
-        } message: {
-            Text(viewModel.state.errorMessage ?? "")
-        }
-    }
-
-    private func formatMoney(_ value: Decimal?) -> String {
-        guard let value else { return "—" }
-        return NSDecimalNumber(decimal: value).stringValue
+        .errorAlert(errorMessage: viewModel.state.errorMessage, clearError: { viewModel.clearError() })
     }
 }
 

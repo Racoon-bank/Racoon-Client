@@ -8,7 +8,9 @@
 import Foundation
 
 public protocol CoreBankAccountRepository: Sendable {
-    func openAccount() async throws -> BankAccountDto
+    func openAccount(currency: String) async throws -> BankAccountDto
+    func changeVisibility(id: UUID) async throws
+    func transfer(fromAccountId: UUID, toAccountNumber: String?, amount: Double) async throws -> BankAccountDto
     func closeAccount(id: UUID) async throws
     func getMyAccounts() async throws -> [BankAccountDto]
     func deposit(id: UUID, amount: Double) async throws -> BankAccountDto

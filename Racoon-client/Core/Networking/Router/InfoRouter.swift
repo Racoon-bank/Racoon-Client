@@ -13,7 +13,8 @@ public enum InfoRouter: APIRouter {
 
     case login(email: String, password: String)
     case refresh(refreshToken: String)
-
+    case getSsoLoginPage(redirectUrl: String)
+        case switchTheme
     case logout(accessToken: String)
 
     public var endpoint: Endpoint {
@@ -52,6 +53,21 @@ public enum InfoRouter: APIRouter {
                 path: "/api/auth/logout",
                 headers: ["Authorization": "Bearer \(accessToken)"]
             )
-        }
+        
+    case .getSsoLoginPage(let redirectUrl):
+        
+               return Endpoint(
+                   service: .info,
+                   method: .GET,
+                   path: "/api/auth/login?redirectUrl=\(redirectUrl)"
+               )
+               
+           case .switchTheme:
+               return Endpoint(
+                   service: .info,
+                   method: .PUT,
+                   path: "/api/user/theme"
+               )
+           }
     }
 }
