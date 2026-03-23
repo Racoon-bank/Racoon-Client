@@ -38,41 +38,33 @@ final class AppState: ObservableObject {
     }
 
     func onLoggedIn() {
-            session = .authenticated
-            Task { await container.bankHubClient.connect() }
-        }
+        session = .authenticated
+        Task { await container.bankHubClient.connect() }
+    }
 
-        func onLoggedOut() {
-            session = .unauthenticated
-            lastCreatedCreditId = nil
-            fallbackError = nil
-            
-            Task { await container.bankHubClient.disconnect() }
-        }
-        
-        func bootstrap() async {
-            let tokens = await container.tokenStore.readTokens()
-            session = (tokens == nil) ? .unauthenticated : .authenticated
-            
-            if session == .authenticated {
-                await container.bankHubClient.connect()
-            }
-        }
     func onLoggedOut() {
         session = .unauthenticated
         lastCreatedCreditId = nil
         fallbackError = nil
+        Task { await container.bankHubClient.disconnect() }
+    }
+
+    func bootstrap() async {
+        let tokens = await container.tokenStore.readTokens()
+        session = (tokens == nil) ? .unauthenticated : .authenticated
     }
 
     func retryBootstrap() async {
+        globalError = nil
         fallbackError = nil
         session = .unknown
+        await container.bankHubClient.disconnect()
         await bootstrap()
     }
 
     private func handleAppError(_ error: AppErrorState) {
         switch error.kind {
-        case .alert:
+        case .banner, .alert:
             globalError = error
 
         case .fallback:

@@ -12,5 +12,6 @@ public enum DomainError: Error, Sendable {
     case noInternet
     case timeout
     case serverUnavailable
+    case invalidServerResponse
     case unknown
 }

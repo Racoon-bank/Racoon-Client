@@ -8,17 +8,20 @@
 import SwiftUI
 
 struct AppFallbackView: View {
+    @EnvironmentObject private var appState: AppState
+
     let title: String
     let message: String
     let canRetry: Bool
     let onRetry: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
 
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 44))
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
 
             Text(title)
                 .font(.title2)
@@ -28,9 +31,18 @@ struct AppFallbackView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            if canRetry {
-                Button("Retry", action: onRetry)
+            VStack(spacing: 12) {
+                if canRetry {
+                    Button("Try again") {
+                        onRetry()
+                    }
                     .buttonStyle(.borderedProminent)
+                }
+
+                Button("Log out") {
+                    appState.onLoggedOut()
+                }
+                .buttonStyle(.bordered)
             }
 
             Spacer()

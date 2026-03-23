@@ -43,9 +43,7 @@ struct RootView: View {
                 set: { if !$0 { appState.clearGlobalError() } }
             )
         ) {
-            Button("OK") {
-                appState.clearGlobalError()
-            }
+            Button("OK") { appState.clearGlobalError() }
         } message: {
             Text(appState.globalError?.message ?? "")
         }

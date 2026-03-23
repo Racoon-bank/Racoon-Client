@@ -9,7 +9,6 @@
 public protocol SwitchThemeUseCase: Sendable {
     func callAsFunction() async throws
 }
-
 public struct SwitchThemeUseCaseImpl: SwitchThemeUseCase {
     private let repo: InfoUserRepository
     private let events: DomainEventBus

@@ -22,7 +22,8 @@ struct Racoon_clientApp: App {
         _appSettingsStore = StateObject(
             wrappedValue: AppSettingsStore(
                 storage: container.appSettingsStorage,
-                loadRemote: container.loadAppSettingsUseCase
+                syncTheme: container.syncThemeFromProfileUseCase,
+                syncHiddenAccounts: container.syncHiddenAccountsUseCase
             )
         )
     }
@@ -35,7 +36,8 @@ struct Racoon_clientApp: App {
                 .environmentObject(appSettingsStore)
                 .preferredColorScheme(appSettingsStore.settings.theme.colorScheme)
                 .task {
-                    await appSettingsStore.bootstrap()
+                    appSettingsStore.bootstrapLocal()
+                    await appSettingsStore.syncFromBackend()
                 }
         }
     }

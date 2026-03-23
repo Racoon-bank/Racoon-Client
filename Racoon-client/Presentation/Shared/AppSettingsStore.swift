@@ -13,37 +13,60 @@ final class AppSettingsStore: ObservableObject {
     @Published private(set) var settings: AppSettings = .init()
 
     private let storage: AppSettingsStorage
-    private let loadRemote: LoadAppSettingsUseCase
+    private let syncTheme: SyncThemeFromProfileUseCase
+    private let syncHiddenAccounts: SyncHiddenAccountsUseCase
 
     init(
         storage: AppSettingsStorage,
-        loadRemote: LoadAppSettingsUseCase
+        syncTheme: SyncThemeFromProfileUseCase,
+        syncHiddenAccounts: SyncHiddenAccountsUseCase
     ) {
         self.storage = storage
-        self.loadRemote = loadRemote
+        self.syncTheme = syncTheme
+        self.syncHiddenAccounts = syncHiddenAccounts
         self.settings = storage.load()
     }
 
-    func bootstrap() async {
-        let local = storage.load()
-        settings = local
+    func bootstrapLocal() {
+        settings = storage.load()
+    }
+
+    func syncFromBackend() async {
+        do {
+            _ = try await syncTheme()
+            settings = storage.load()
+        } catch {
+            
+        }
 
         do {
-            let remote = try await loadRemote()
-            settings = remote
-            storage.save(remote)
+            _ = try await syncHiddenAccounts()
+            settings = storage.load()
         } catch {
-          
+            
         }
     }
 
-    func setTheme(_ theme: AppThemePreference) {
+    func setThemeLocally(_ theme: AppThemePreference) {
         let updated = settings.withTheme(theme)
         settings = updated
         storage.save(updated)
     }
 
-    func toggleHidden(accountId: UUID) {
+    func setHiddenLocally(accountId: UUID, hidden: Bool) {
+        var ids = settings.hiddenAccountIds
+        if hidden {
+            ids.insert(accountId.uuidString)
+        } else {
+            ids.remove(accountId.uuidString)
+        }
+
+        let updated = settings.withHiddenAccountIds(ids)
+        settings = updated
+        storage.save(updated)
+    }
+
+    func toggleHiddenLocally(accountId: UUID) {
         let updated = settings.togglingHidden(accountId: accountId.uuidString)
         settings = updated
         storage.save(updated)

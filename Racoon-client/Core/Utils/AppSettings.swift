@@ -22,6 +22,10 @@ public struct AppSettings: Codable, Sendable, Equatable {
         AppSettings(theme: theme, hiddenAccountIds: hiddenAccountIds)
     }
 
+    public func withHiddenAccountIds(_ ids: Set<String>) -> AppSettings {
+        AppSettings(theme: theme, hiddenAccountIds: ids)
+    }
+
     public func togglingHidden(accountId: String) -> AppSettings {
         var ids = hiddenAccountIds
         if ids.contains(accountId) {

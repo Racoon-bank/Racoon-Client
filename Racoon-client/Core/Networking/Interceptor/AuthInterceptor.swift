@@ -50,7 +50,7 @@ public final class AuthInterceptor: HTTPInterceptor {
         } catch {
             await tokenStore.clearTokens()
 
-            appErrorBus.post(
+            await appErrorBus.post(
                 AppErrorState(
                     title: "Session expired",
                     message: "Please sign in again.",

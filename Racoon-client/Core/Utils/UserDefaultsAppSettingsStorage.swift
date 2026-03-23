@@ -28,7 +28,6 @@ public final class UserDefaultsAppSettingsStorage: AppSettingsStorage, @unchecke
         else {
             return AppSettings()
         }
-
         return settings
     }
 

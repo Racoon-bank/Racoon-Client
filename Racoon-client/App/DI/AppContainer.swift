@@ -58,6 +58,8 @@ public final class AppContainer: @unchecked Sendable {
     public let loadAppSettingsUseCase: LoadAppSettingsUseCase
     public let setThemeUseCase: SetThemeUseCase
     public let toggleHiddenAccountUseCase: ToggleHiddenAccountUseCase
+    public let syncThemeFromProfileUseCase: SyncThemeFromProfileUseCase
+    public let syncHiddenAccountsUseCase: SyncHiddenAccountsUseCase
     
     private init() {
         self.env = NetworkEnvironment.fromBuildConfig()
@@ -133,6 +135,17 @@ public final class AppContainer: @unchecked Sendable {
         self.toggleHiddenAccountUseCase = ToggleHiddenAccountUseCaseImpl(
             storage: appSettingsStorage,
             events: eventBus
+        )
+
+        self.syncThemeFromProfileUseCase = SyncThemeFromProfileUseCaseImpl(
+            getProfile: self.getProfileUseCase,
+            storage: appSettingsStorage,
+            events: eventBus
+        )
+
+        self.syncHiddenAccountsUseCase = SyncHiddenAccountsUseCaseImpl(
+            getAccounts: self.getMyAccountsUseCase,
+            storage: appSettingsStorage
         )
     }
 }

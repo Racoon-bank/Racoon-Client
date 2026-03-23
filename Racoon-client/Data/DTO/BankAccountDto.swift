@@ -13,4 +13,6 @@ public struct BankAccountDto: Decodable, Sendable {
     public let accountNumber: String?
     public let balance: Double
     public let createdAt: Date
+    public let isHidden: Bool
+    public let currency: String
 }

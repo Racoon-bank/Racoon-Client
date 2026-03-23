@@ -15,7 +15,9 @@ enum BankAccountMapper {
             userId: dto.userId,
             accountNumber: dto.accountNumber,
             balance: Decimal(dto.balance),
-            createdAt: dto.createdAt
+            createdAt: dto.createdAt,
+            isHidden: dto.isHidden,
+            currency: Currency(dtoValue: dto.currency)
         )
     }
 

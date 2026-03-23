@@ -30,6 +30,6 @@ public struct SetThemeUseCaseImpl: SetThemeUseCase {
             return
         }
 
-        await events.publish(.themeSwitched(theme: domainTheme))
+        await events.publish(.themeSwitched)
     }
 }

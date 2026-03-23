@@ -31,7 +31,9 @@ final class ViewModelFactory {
     func makeAccountsListViewModel() -> AccountsListViewModel {
         AccountsListViewModel(
             getMyAccounts: container.getMyAccountsUseCase,
-            openAccount: container.openAccountUseCase
+            openAccount: container.openAccountUseCase,
+            appErrorBus: container.appErrorBus,
+            appErrorMapper: container.appErrorMapper
         )
     }
     

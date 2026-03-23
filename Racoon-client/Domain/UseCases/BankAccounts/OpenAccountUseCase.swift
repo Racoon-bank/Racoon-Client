@@ -9,7 +9,7 @@
 import Foundation
 
 public protocol OpenAccountUseCase: Sendable {
-    func callAsFunction() async throws -> BankAccount
+    func callAsFunction(currency: Currency) async throws -> BankAccount
 }
 
 public struct OpenAccountUseCaseImpl: OpenAccountUseCase {
@@ -19,8 +19,8 @@ public struct OpenAccountUseCaseImpl: OpenAccountUseCase {
         self.repo = repo
     }
 
-    public func callAsFunction() async throws -> BankAccount {
-        let dto = try await repo.openAccount()
+    public func callAsFunction(currency: Currency) async throws -> BankAccount {
+        let dto = try await repo.openAccount(currency: currency.rawValue)
         return BankAccountMapper.toDomain(dto)
     }
 }

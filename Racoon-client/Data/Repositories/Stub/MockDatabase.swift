@@ -26,14 +26,16 @@ public actor MockDatabase {
             userId: userId,
             accountNumber: "40817 0000 0000 0001",
             balance: 1250.0,
-            createdAt: Date().addingTimeInterval(-86400 * 5)
+            createdAt: Date().addingTimeInterval(-86400 * 5), isHidden: false,
+            currency: "RUB"
         )
         let a2 = BankAccountDto(
             id: UUID(),
             userId: userId,
             accountNumber: "40817 0000 0000 0002",
             balance: 0.0,
-            createdAt: Date().addingTimeInterval(-86400 * 2)
+            createdAt: Date().addingTimeInterval(-86400 * 2), isHidden: false,
+            currency: "RUB"
         )
         accounts[a1.id] = a1
         accounts[a2.id] = a2
@@ -72,7 +74,8 @@ public actor MockDatabase {
             userId: userId,
             accountNumber: "40817 0000 0000 \(String(Int.random(in: 1000...9999)))",
             balance: 0.0,
-            createdAt: Date()
+            createdAt: Date(), isHidden: false,
+            currency: "RUB"
         )
         accounts[id] = dto
         operations[id] = []
@@ -94,7 +97,8 @@ public actor MockDatabase {
             userId: acc.userId,
             accountNumber: acc.accountNumber,
             balance: acc.balance + amount,
-            createdAt: acc.createdAt
+            createdAt: acc.createdAt, isHidden: false,
+            currency: "RUB"
         )
         accounts[id] = acc
 
@@ -119,7 +123,9 @@ public actor MockDatabase {
             userId: acc.userId,
             accountNumber: acc.accountNumber,
             balance: acc.balance - amount,
-            createdAt: acc.createdAt
+            createdAt: acc.createdAt,
+            isHidden: false,
+            currency: "RUB"
         )
         accounts[id] = acc
 
@@ -163,9 +169,6 @@ public actor MockDatabase {
         let tariffName = tariffs[tariffId]?.name ?? "Tariff #\(tariffId)"
         let interestRate = tariffs[tariffId]?.interestRate ?? 12.5
 
-        // Very simple financial model for mock:
-        // total = amount * (1 + rate)
-        // monthly = total / months
         let totalToPay = amount * (1.0 + interestRate / 100.0)
         let monthlyPayment = totalToPay / Double(durationMonths)
 

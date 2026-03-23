@@ -15,8 +15,9 @@ public enum DomainEvent: Sendable {
     case bankAccountClosed(accountId: UUID)
     case moneyDeposited(accountId: UUID, amount: Decimal)
     case moneyWithdrawn(accountId: UUID, amount: Decimal)
+    case moneyTransferred(fromAccountId: UUID, toAccountNumber: String?, amount: Decimal)
     case creditTaken(creditId: Int64)
     case creditRepaid(creditId: Int64, amount: Decimal)
     case visibilityChanged(accountId: UUID)
-    case themeSwitched(theme: Theme)
+    case themeSwitched
 }

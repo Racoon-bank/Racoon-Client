@@ -11,3 +11,15 @@ public enum AppThemePreference: String, Codable, Sendable, Equatable {
     case light
     case dark
 }
+extension AppThemePreference {
+    init(profileTheme: Theme?) {
+        switch profileTheme {
+        case .Light:
+            self = .light
+        case .Dark:
+            self = .dark
+        case nil:
+            self = .system
+        }
+    }
+}

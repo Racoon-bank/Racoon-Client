@@ -13,4 +13,6 @@ public struct BankAccount: Equatable, Sendable, Identifiable {
     public let accountNumber: String?
     public let balance: Decimal
     public let createdAt: Date
+    public let isHidden: Bool
+    public let currency: Currency
 }
