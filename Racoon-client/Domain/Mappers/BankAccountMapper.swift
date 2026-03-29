@@ -8,15 +8,15 @@
 import Foundation
 
 enum BankAccountMapper {
-
-    static func toDomain(_ dto: BankAccountDto) -> BankAccount {
+    
+    static func toDomain(_ dto: BankAccountDto, hiddenAccountIds: Set<UUID>) -> BankAccount {
         BankAccount(
             id: dto.id,
             userId: dto.userId,
             accountNumber: dto.accountNumber,
             balance: Decimal(dto.balance),
             createdAt: dto.createdAt,
-            isHidden: dto.isHidden,
+            isHidden: hiddenAccountIds.contains(dto.id),
             currency: Currency(dtoValue: dto.currency)
         )
     }
@@ -25,20 +25,11 @@ enum BankAccountMapper {
         let type: BankOperationType
 
         switch dto.type {
-        case .deposit:
-            type = .deposit
-
-        case .withdraw:
-            type = .withdraw
-
-        case .creditIssued:
-            type = .creditIssued
-
-        case .creditPayment:
-            type = .creditPayment
-
-        case .unknown(let raw):
-            type = .unknown(raw)
+        case .deposit: type = .deposit
+        case .withdraw: type = .withdraw
+        case .creditIssued: type = .creditIssued
+        case .creditPayment: type = .creditPayment
+        case .unknown(let raw): type = .unknown(raw)
         }
 
         return BankOperation(

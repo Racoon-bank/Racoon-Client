@@ -9,6 +9,38 @@
 import Foundation
 
 public final class CreditRepositoryMock: CreditRepository {
+    public func getMyCreditRating() async throws -> CreditRatingDto {
+        return CreditRatingDto(score: 1, ratingLevel: "LOW")
+    }
+    
+    public func getMyApplications() async throws -> [CreditApplicationDto] {
+        return [CreditApplicationDto(
+            id: 2,
+            tariffName: "ALL",
+            amount: 10,
+            status: "PAID"
+        )]
+    }
+    
+    public func getMyOverduePayments() async throws -> [OverduePaymentDto] {
+        return []
+    }
+    
+    public func take(bankAccountId: String, tariffId: Int64, amount: Double, durationMonths: Int) async throws -> TakeCreditResultDto {
+        return TakeCreditResultDto(
+            resultType: "PAID",
+            message: "NO",
+            credit: try await getMyCredits().first!,
+            application: CreditApplicationDto(
+                id: 2,
+                tariffName: "ALL",
+                amount: 10,
+                status: "PAID"
+            )
+        )
+
+    }
+    
     private let db: MockDatabase
 
     public init(db: MockDatabase = .shared) {

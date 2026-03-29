@@ -11,49 +11,62 @@ import Foundation
 @MainActor
 final class ViewModelFactory {
     private let container: AppContainer
-
+    
     init(container: AppContainer) {
         self.container = container
+    
     }
 
     func makeLoginViewModel(appState: AppState) -> LoginViewModel {
-        LoginViewModel(login: container.loginUseCase, appState: appState)
+        LoginViewModel(completeLogin: container.loginUseCase, appState: appState)
     }
 
     func makeProfileViewModel(appState: AppState) -> ProfileViewModel {
         ProfileViewModel(
             getProfile: container.getProfileUseCase,
             logout: container.logoutUseCase,
-            appState: appState
+            setTheme: container.setThemeUseCase,
+            appSettingsStorage: container.appSettingsStorage, appState: appState
         )
     }
+
 
     func makeAccountsListViewModel() -> AccountsListViewModel {
         AccountsListViewModel(
             getMyAccounts: container.getMyAccountsUseCase,
             openAccount: container.openAccountUseCase,
+            connectBankHub: container.connectBankHubUseCase,
+            disconnectBankHub: container.disconnectBankHubUseCase,
+            subscribeToAccount: container.subscribeToAccountUseCase,
+            eventBus: container.eventBus,
             appErrorBus: container.appErrorBus,
             appErrorMapper: container.appErrorMapper
+            
         )
     }
     
     func makeAccountDetailsViewModel(accountId: UUID) -> AccountDetailsViewModel {
-        AccountDetailsViewModel(
-            accountId: accountId,
-            getMyAccounts: container.getMyAccountsUseCase,
-            deposit: container.depositUseCase,
-            withdraw: container.withdrawUseCase,
-            closeAccount: container.closeAccountUseCase,
-            getHistory: container.getAccountHistoryUseCase
-        )
-    }
+            AccountDetailsViewModel(
+                accountId: accountId,
+                getMyAccounts: container.getMyAccountsUseCase,
+                deposit: container.depositUseCase,
+                withdraw: container.withdrawUseCase,
+                transfer: container.transferMoneyUseCase,
+                closeAccount: container.closeAccountUseCase,
+                getHistory: container.getAccountHistoryUseCase,
+                toggleHiddenAccount: container.toggleHiddenAccountUseCase,
+                connectBankHub: container.connectBankHubUseCase,
+                subscribeToAccount: container.subscribeToAccountUseCase,
+                eventBus: container.eventBus
+            )
+        }
     
     func makeCreditsHomeViewModel(appState: AppState) -> CreditsHomeViewModel {
         CreditsHomeViewModel(
             getMyCredits: container.getMyCreditsUseCase,
-            takeCredit: container.takeCreditUseCase,
-            recentStore: container.recentCreditsStore,
-            appState: appState
+            getMyRating: container.getMyCreditRatingUseCase,
+            getMyApplications: container.getMyCreditApplicationsUseCase, getMyOverduePayments: container.getMyOverduePaymentsUseCase,
+            takeCredit:  container.takeCreditUseCase
         )
     }
 

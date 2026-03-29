@@ -37,6 +37,7 @@ public actor KeychainTokenStore: TokenStore {
         } catch {
             
         }
+        print("TOKENS SAVED")
     }
 
     public func clearTokens() async {

@@ -19,7 +19,9 @@ struct AccountsListView: View {
 
     var body: some View {
         content
-            .task { await viewModel.load() }
+            .onAppear {
+                Task { await viewModel.load() }
+            }
             .alert("Error", isPresented: Binding(
                 get: { viewModel.state.errorMessage != nil },
                 set: { newValue in
@@ -44,14 +46,16 @@ struct AccountsListView: View {
 
     private var accountsList: some View {
         List {
-            if viewModel.accounts.isEmpty {
+            let visibleAccounts = viewModel.accounts
+            
+            if visibleAccounts.isEmpty {
                 Section {
                     Text("No accounts yet. Tap “Open account” to create one.")
                         .foregroundStyle(.secondary)
                 }
             } else {
                 Section {
-                    ForEach(viewModel.accounts) { account in
+                    ForEach(visibleAccounts) { account in
                         NavigationLink {
                             let factory = ViewModelFactory(container: container)
                             AccountDetailsView(
@@ -92,15 +96,52 @@ private struct AccountRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(account.accountNumber ?? "Account \(account.id.uuidString.prefix(8))")
-                .font(.headline)
+            HStack {
+                if account.isHidden {
+                    Text("•••• •••• ••••")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(account.accountNumber ?? "Unknown Account")
+                        .font(.headline)
+                    
+
+                    if let number = account.accountNumber {
+                        Button {
+                            UIPasteboard.general.string = number
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(4)
+                                .background(Color.secondary.opacity(0.1), in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                
+                Spacer()
+                
+                if account.isHidden {
+                    Image(systemName: "eye.slash")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
 
             HStack {
                 Text("Balance")
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(formatMoney(account.balance, currency: account.currency))
-                    .monospacedDigit()
+                
+                if account.isHidden {
+                    Text("••••")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(formatMoney(account.balance, currency: account.currency))
+                        .monospacedDigit()
+                }
             }
             .font(.subheadline)
         }

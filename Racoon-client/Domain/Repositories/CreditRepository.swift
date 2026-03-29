@@ -9,8 +9,11 @@ import Foundation
 
 public protocol CreditRepository: Sendable {
     func getMyCredits() async throws -> [CreditDto]
+    func getMyCreditRating() async throws -> CreditRatingDto
+    func getMyApplications() async throws -> [CreditApplicationDto]
+    func getMyOverduePayments() async throws -> [OverduePaymentDto]
 
-    func take(bankAccountId: String, tariffId: Int64, amount: Double, durationMonths: Int) async throws -> CreditDto
+    func take(bankAccountId: String, tariffId: Int64, amount: Double, durationMonths: Int) async throws -> TakeCreditResultDto
     func repay(creditId: Int64, bankAccountId: String, amount: Double) async throws -> CreditPaymentDto
 
     func get(creditId: Int64) async throws -> CreditDto

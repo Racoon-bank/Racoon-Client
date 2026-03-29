@@ -28,18 +28,18 @@ final class AppState: ObservableObject {
         self.container = container
 
         Task {
-            let stream = container.appErrorBus.stream()
-            for await error in stream {
-                await MainActor.run {
-                    self.handleAppError(error)
-                }
+            for await error in await container.appErrorBus.stream() {
+                self.handleAppError(error)
             }
         }
     }
 
     func onLoggedIn() {
         session = .authenticated
-        Task { await container.bankHubClient.connect() }
+        Task {
+            await container.bankHubClient.connect()
+            _ = try? await container.syncThemeFromProfileUseCase()
+        }
     }
 
     func onLoggedOut() {
@@ -51,7 +51,16 @@ final class AppState: ObservableObject {
 
     func bootstrap() async {
         let tokens = await container.tokenStore.readTokens()
-        session = (tokens == nil) ? .unauthenticated : .authenticated
+        
+        if tokens == nil {
+            session = .unauthenticated
+        } else {
+            session = .authenticated
+            
+            _ = try? await container.syncThemeFromProfileUseCase()
+            
+            await container.bankHubClient.connect()
+        }
     }
 
     func retryBootstrap() async {
@@ -66,17 +75,11 @@ final class AppState: ObservableObject {
         switch error.kind {
         case .banner, .alert:
             globalError = error
-
         case .fallback:
             fallbackError = error
-
         case .forceLogout:
             onLoggedOut()
-            globalError = AppErrorState(
-                title: error.title,
-                message: error.message,
-                kind: .alert
-            )
+            globalError = AppErrorState(title: error.title, message: error.message, kind: .alert)
         }
     }
 

@@ -29,7 +29,7 @@ public struct ChangeVisibilityUseCaseImpl: ChangeVisibilityUseCase {
     public func callAsFunction(accountId: UUID) async throws {
         try await repo.changeVisibility(id: accountId)
 
-        let updated = storage.load().togglingHidden(accountId: accountId.uuidString)
+        let updated = storage.load().togglingHidden(accountId: accountId)
         storage.save(updated)
 
         await events.publish(.visibilityChanged(accountId: accountId))

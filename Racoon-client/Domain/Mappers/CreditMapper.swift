@@ -19,18 +19,18 @@ enum CreditMapper {
 
             interestRate: Decimal(dto.interestRate),
 
-            amount: Decimal(dto.amount),
+            currency: dto.currency, amount: Decimal(dto.amount),
             remainingAmount: Decimal(dto.remainingAmount),
             monthlyPayment: Decimal(dto.monthlyPayment),
-
-            durationMonths: dto.durationMonths,
+            
+            totalAmount: dto.totalAmount, durationMonths: dto.durationMonths,
             remainingMonths: dto.remainingMonths,
-
+            
             accumulatedPenalty: Decimal(dto.accumulatedPenalty),
             overdueDays: dto.overdueDays,
-
+            
             status: CreditStatus(rawValue: dto.status) ?? .active,
-
+            
             issueDate: dto.issueDate,
             nextPaymentDate: dto.nextPaymentDate,
 
@@ -47,6 +47,41 @@ enum CreditMapper {
             paymentType: CreditPaymentType(rawValue: dto.paymentType.rawValue) ?? .manualRepayment,
             paymentDate: dto.paymentDate,
             createdAt: dto.createdAt
+        )
+    }
+    
+    static func toDomain(_ dto: CreditRatingDto) -> CreditRating {
+        CreditRating(
+            score: dto.score,
+            ratingLevel: dto.ratingLevel ?? "Unknown"
+        )
+    }
+
+    static func toDomain(_ dto: CreditApplicationDto) -> CreditApplication {
+        let status = CreditApplicationStatus(rawValue: dto.status ?? "") ?? .pending
+        
+        return CreditApplication(
+            id: dto.id,
+            tariffName: dto.tariffName ?? "Credit",
+            amount: Decimal(dto.amount),
+            status: status
+        )
+    }
+
+    static func toDomain(_ dto: OverduePaymentDto) -> OverduePayment {
+        OverduePayment(
+            scheduleId: dto.scheduleId,
+            creditId: dto.creditId,
+            remainingDue: Decimal(dto.remainingDue),
+            overdueDays: dto.overdueDays
+        )
+    }
+
+    static func toDomain(_ dto: TakeCreditResultDto) -> TakeCreditResult {
+        TakeCreditResult(
+            message: dto.message,
+            credit: dto.credit.map { toDomain($0) },
+            application: dto.application.map { toDomain($0) }
         )
     }
 }

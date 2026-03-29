@@ -14,14 +14,17 @@ public protocol GetMyAccountsUseCase: Sendable {
 
 public struct GetMyAccountsUseCaseImpl: GetMyAccountsUseCase {
     private let repo: CoreBankAccountRepository
-    
+    private let hiddenStorage: AppSettingsStorage
 
-    public init(repo: CoreBankAccountRepository) {
+    public init(repo: CoreBankAccountRepository, hiddenStorage: AppSettingsStorage) {
         self.repo = repo
+        self.hiddenStorage = hiddenStorage
     }
 
     public func callAsFunction() async throws -> [BankAccount] {
         let dtos = try await repo.getMyAccounts()
-        return dtos.map(BankAccountMapper.toDomain)
+        let hiddenIds = hiddenStorage.load().hiddenAccountIds
+        
+        return dtos.map { BankAccountMapper.toDomain($0, hiddenAccountIds: hiddenIds) }
     }
 }

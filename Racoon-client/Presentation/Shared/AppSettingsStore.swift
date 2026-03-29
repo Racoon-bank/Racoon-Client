@@ -10,69 +10,51 @@ import Foundation
 
 @MainActor
 final class AppSettingsStore: ObservableObject {
-    @Published private(set) var settings: AppSettings = .init()
+    @Published private(set) var settings: AppSettings = AppSettings()
 
     private let storage: AppSettingsStorage
     private let syncTheme: SyncThemeFromProfileUseCase
     private let syncHiddenAccounts: SyncHiddenAccountsUseCase
+    private let eventBus: DomainEventBus
 
     init(
         storage: AppSettingsStorage,
         syncTheme: SyncThemeFromProfileUseCase,
-        syncHiddenAccounts: SyncHiddenAccountsUseCase
+        syncHiddenAccounts: SyncHiddenAccountsUseCase,
+        eventBus: DomainEventBus
     ) {
         self.storage = storage
         self.syncTheme = syncTheme
         self.syncHiddenAccounts = syncHiddenAccounts
+        self.eventBus = eventBus
+        
         self.settings = storage.load()
+        
+        listenForEvents()
+    }
+
+    private func listenForEvents() {
+        Task {
+            for await event in eventBus.events {
+             
+                if case .themeSwitched = event {
+                    self.settings = storage.load()
+                } else if case .visibilityChanged = event {
+                    self.settings = storage.load()
+                }
+            }
+        }
     }
 
     func bootstrapLocal() {
-        settings = storage.load()
+        self.settings = storage.load()
     }
 
     func syncFromBackend() async {
-        do {
-            _ = try await syncTheme()
-            settings = storage.load()
-        } catch {
-            
-        }
+        _ = try? await syncTheme()
 
-        do {
-            _ = try await syncHiddenAccounts()
-            settings = storage.load()
-        } catch {
-            
-        }
-    }
-
-    func setThemeLocally(_ theme: AppThemePreference) {
-        let updated = settings.withTheme(theme)
-        settings = updated
-        storage.save(updated)
-    }
-
-    func setHiddenLocally(accountId: UUID, hidden: Bool) {
-        var ids = settings.hiddenAccountIds
-        if hidden {
-            ids.insert(accountId.uuidString)
-        } else {
-            ids.remove(accountId.uuidString)
-        }
-
-        let updated = settings.withHiddenAccountIds(ids)
-        settings = updated
-        storage.save(updated)
-    }
-
-    func toggleHiddenLocally(accountId: UUID) {
-        let updated = settings.togglingHidden(accountId: accountId.uuidString)
-        settings = updated
-        storage.save(updated)
-    }
-
-    func isHidden(accountId: UUID) -> Bool {
-        settings.hiddenAccountIds.contains(accountId.uuidString)
+        _ = try? await syncHiddenAccounts()
+        
+        self.settings = storage.load()
     }
 }

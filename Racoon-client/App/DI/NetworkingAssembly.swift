@@ -114,13 +114,14 @@ public struct NetworkingAssembly: Sendable {
             return f
         }()
     }
-    public func makeBankHubClient(tokenStore: TokenStore) -> BankHubClient {
-        return BankHubClient(env: env, tokenStore: tokenStore, session: .shared)
+    public func makeBankHubClient(tokenStore: TokenStore,  eventBus: DomainEventBus) -> BankHubClient {
+        return BankHubClient(env: env, tokenStore: tokenStore,eventBus: eventBus, session: .shared)
     }
     public func makeAuthedHTTPClient(
         tokenStore: TokenStore,
         tokenRefresher: any TokenRefresher,
-        appErrorBus: AppErrorBus
+        appErrorBus: AppErrorBus,
+       
     ) -> HTTPClient {
         let encoder = makeJSONEncoder()
         let decoder = makeJSONDecoder()

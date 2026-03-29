@@ -21,6 +21,20 @@ struct ProfileView: View {
                 LabeledContent("Username", value: viewModel.username.isEmpty ? "—" : viewModel.username)
                 LabeledContent("Email", value: viewModel.email.isEmpty ? "—" : viewModel.email)
             }
+            
+            // 👈 Add the Preferences Section
+            Section("Preferences") {
+                let isDarkBinding = Binding<Bool>(
+                    get: { viewModel.currentTheme == .dark },
+                    set: { newValue in
+                        Task { await viewModel.toggleTheme(isDark: newValue) }
+                    }
+                )
+                
+                Toggle(isOn: isDarkBinding) {
+                    Label("Dark Mode", systemImage: viewModel.currentTheme == .dark ? "moon.fill" : "moon")
+                }
+            }
 
             Section {
                 Button(role: .destructive) {

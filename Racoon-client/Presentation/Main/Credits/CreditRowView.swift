@@ -10,11 +10,16 @@ import SwiftUI
 struct CreditRowView: View {
     let credit: Credit
 
+    private var isInactive: Bool {
+        credit.status == .paidOff || credit.status == .cancelled || credit.nextPaymentDate == nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 Text(credit.tariffName)
                     .font(.headline)
+                    .foregroundStyle(isInactive ? .secondary : .primary)
 
                 Spacer()
 
@@ -26,24 +31,28 @@ struct CreditRowView: View {
                 Spacer()
                 Metric(title: "Monthly", value: money(credit.monthlyPayment))
             }
+            .foregroundStyle(isInactive ? .secondary : .primary)
 
-            if showsNextPayment(credit.status) {
+            if showsNextPayment(credit.status), let nextDate = credit.nextPaymentDate {
                 HStack {
                     Text("Next payment")
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(date(credit.nextPaymentDate))
+                    Text(date(nextDate))
                         .foregroundStyle(.secondary)
                 }
                 .font(.caption)
             }
         }
         .padding(.vertical, 6)
+        .opacity(isInactive ? 0.6 : 1.0)
+        .disabled(isInactive)
     }
 
     private func money(_ value: Decimal) -> String {
-        MoneyFormatter.shared.string(from: value)
+        return "\(MoneyFormatter.shared.string(from: value)) \(credit.currency.symbol)"
     }
+    
     private func showsNextPayment(_ status: CreditStatus) -> Bool {
         switch status {
         case .active, .overdue:
@@ -53,11 +62,9 @@ struct CreditRowView: View {
         }
     }
 
-    private func date(_ value: Date) -> String {
-        value.formatted(date: .abbreviated, time: .omitted)
+    private func date(_ value: Date?) -> String {
+        guard let value = value else { return "—" }
+        return value.formatted(date: .abbreviated, time: .omitted)
     }
 }
-
- 
-
  

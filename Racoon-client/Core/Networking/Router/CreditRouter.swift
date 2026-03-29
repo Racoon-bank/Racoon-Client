@@ -9,6 +9,10 @@ import Foundation
 
 public enum CreditRouter: APIRouter {
     case getMyCredits
+    case getMyCreditRating
+    case getMyApplications
+    case getMyOverduePayments
+    
     case take(bankAccountId: String, tariffId: Int64, amount: Double, durationMonths: Int)
     case get(creditId: Int64)
     case repay(creditId: Int64, bankAccountId: String, amount: Double)
@@ -23,6 +27,12 @@ public enum CreditRouter: APIRouter {
         switch self {
         case .getMyCredits:
             return Endpoint(service: .credit, method: .GET, path: "/api/credits/my")
+        case .getMyCreditRating:
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/my/rating")
+        case .getMyApplications:
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/my/applications")
+        case .getMyOverduePayments:
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/my/overdue-payments")
 
         case .take(let bankAccountId, let tariffId, let amount, let durationMonths):
             return Endpoint(
@@ -40,7 +50,7 @@ public enum CreditRouter: APIRouter {
             )
 
         case .get(let creditId):
-            return Endpoint(service: .credit,method: .GET, path: "/api/credits/\(creditId)")
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/\(creditId)")
 
         case .repay(let creditId, let bankAccountId, let amount):
             return Endpoint(
@@ -51,19 +61,19 @@ public enum CreditRouter: APIRouter {
             )
 
         case .payments(let creditId):
-            return Endpoint(service: .credit,method: .GET, path: "/api/credits/\(creditId)/payments")
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/\(creditId)/payments")
 
         case .statistics(let creditId):
-            return Endpoint(service: .credit,method: .GET, path: "/api/credits/\(creditId)/statistics")
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/\(creditId)/statistics")
 
         case .schedule(let creditId):
-            return Endpoint(service: .credit,method: .GET, path: "/api/credits/\(creditId)/schedule")
+            return Endpoint(service: .credit, method: .GET, path: "/api/credits/\(creditId)/schedule")
 
         case .tariffs:
-            return Endpoint(service: .credit,method: .GET, path: "/api/tariffs")
+            return Endpoint(service: .credit, method: .GET, path: "/api/tariffs")
 
         case .tariff(let id):
-            return Endpoint(service: .credit,method: .GET, path: "/api/tariffs/\(id)")
+            return Endpoint(service: .credit, method: .GET, path: "/api/tariffs/\(id)")
         }
     }
 }

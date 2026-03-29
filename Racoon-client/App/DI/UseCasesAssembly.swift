@@ -15,6 +15,8 @@ public struct UseCasesAssembly: Sendable {
     private let creditRepo: CreditRepository
     private let events: DomainEventBus
     private let tokenStore: TokenStore
+    private let bankHubClient: BankHubClient
+    private let appSettingsStorage: AppSettingsStorage
 
     public init(
         authRepo: CoreAuthRepository,
@@ -22,7 +24,9 @@ public struct UseCasesAssembly: Sendable {
         infoRepo: InfoUserRepository,
         creditRepo: CreditRepository,
         events: DomainEventBus,
-        tokenStore: TokenStore
+        tokenStore: TokenStore,
+        bankHubClient: BankHubClient,
+        appSettingsStorage: AppSettingsStorage
     ) {
         self.authRepo = authRepo
         self.bankRepo = bankRepo
@@ -30,6 +34,8 @@ public struct UseCasesAssembly: Sendable {
         self.creditRepo = creditRepo
         self.tokenStore = tokenStore
         self.events = events
+        self.bankHubClient = bankHubClient
+        self.appSettingsStorage = appSettingsStorage
     }
 
     public func makeLoginUseCase() -> LoginUseCase {
@@ -48,7 +54,7 @@ public struct UseCasesAssembly: Sendable {
     }
 
     public func makeOpenAccountUseCase() -> OpenAccountUseCase {
-        OpenAccountUseCaseImpl(repo: bankRepo)
+        OpenAccountUseCaseImpl(repo: bankRepo, hiddenStorage: appSettingsStorage)
     }
 
     public func makeCloseAccountUseCase() -> CloseAccountUseCase {
@@ -56,15 +62,15 @@ public struct UseCasesAssembly: Sendable {
     }
 
     public func makeGetMyAccountsUseCase() -> GetMyAccountsUseCase {
-        GetMyAccountsUseCaseImpl(repo: bankRepo)
+        GetMyAccountsUseCaseImpl(repo: bankRepo, hiddenStorage: appSettingsStorage)
     }
 
     public func makeDepositUseCase() -> DepositUseCase {
-        DepositUseCaseImpl(repo: bankRepo, events: events)
+        DepositUseCaseImpl(repo: bankRepo, events: events, hiddenStorage: appSettingsStorage)
     }
 
     public func makeWithdrawUseCase() -> WithdrawUseCase {
-        WithdrawUseCaseImpl(repo: bankRepo, events: events)
+        WithdrawUseCaseImpl(repo: bankRepo, events: events, hiddenStorage: appSettingsStorage)
     }
 
     public func makeGetAccountHistoryUseCase() -> GetAccountHistoryUseCase {
@@ -76,7 +82,7 @@ public struct UseCasesAssembly: Sendable {
        }
 
     public func makeTakeCreditUseCase() -> TakeCreditUseCase {
-           TakeCreditUseCaseImpl(creditRepo: creditRepo, events: events)
+           TakeCreditUseCaseImpl(repo: creditRepo)
        }
     public func makeRepayCreditUseCase() -> RepayCreditUseCase {
         RepayCreditUseCaseImpl(creditRepo: creditRepo, events: events)
@@ -101,4 +107,32 @@ public struct UseCasesAssembly: Sendable {
     public func makeGetCreditScheduleUseCase() -> GetCreditScheduleUseCase {
         GetCreditScheduleUseCaseImpl(creditRepo: creditRepo)
     }
+    public func makeTransferMoneyUseCase() -> TransferUseCase {
+        TransferUseCaseImpl(repo: bankRepo)
+    }
+    public func makeConnectBankHubUseCase() -> ConnectBankHubUseCase {
+            ConnectBankHubUseCaseImpl(client: bankHubClient)
+        }
+
+        public func makeDisconnectBankHubUseCase() -> DisconnectBankHubUseCase {
+            DisconnectBankHubUseCaseImpl(client: bankHubClient)
+        }
+
+        public func makeSubscribeToAccountUseCase() -> SubscribeToAccountUseCase {
+            SubscribeToAccountUseCaseImpl(client: bankHubClient)
+        }
+
+        public func makeUnsubscribeFromAccountUseCase() -> UnsubscribeFromAccountUseCase {
+            UnsubscribeFromAccountUseCaseImpl(client: bankHubClient)
+        }
+    public func makeGetMyCreditRatingUseCase() -> GetMyCreditRatingUseCase {
+            GetMyCreditRatingUseCaseImpl(repo: creditRepo)
+        }
+        public func makeGetMyCreditApplicationsUseCase() -> GetMyCreditApplicationsUseCase {
+            GetMyCreditApplicationsUseCaseImpl(repo: creditRepo)
+        }
+        public func makeGetMyOverduePaymentsUseCase() -> GetMyOverduePaymentsUseCase {
+            GetMyOverduePaymentsUseCaseImpl(repo: creditRepo)
+        }
+
 }

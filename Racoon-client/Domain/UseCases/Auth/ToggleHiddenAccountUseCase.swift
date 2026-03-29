@@ -20,7 +20,7 @@ public struct ToggleHiddenAccountUseCaseImpl: ToggleHiddenAccountUseCase {
     }
 
     public func callAsFunction(accountId: UUID) async throws {
-        let updated = storage.load().togglingHidden(accountId: accountId.uuidString)
+        let updated = storage.load().togglingHidden(accountId: accountId)
         storage.save(updated)
         await events.publish(.visibilityChanged(accountId: accountId))
     }

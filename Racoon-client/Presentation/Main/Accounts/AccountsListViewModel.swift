@@ -7,6 +7,7 @@
 
 
 import Combine
+import SwiftUI
 
 @MainActor
 final class AccountsListViewModel: ObservableObject {
@@ -16,19 +17,35 @@ final class AccountsListViewModel: ObservableObject {
 
     private let getMyAccounts: GetMyAccountsUseCase
     private let openAccount: OpenAccountUseCase
+    
+    private let connectBankHub: ConnectBankHubUseCase
+    private let disconnectBankHub: DisconnectBankHubUseCase
+    private let subscribeToAccount: SubscribeToAccountUseCase
+    
+    private let eventBus: DomainEventBus
     private let appErrorBus: AppErrorBus
     private let appErrorMapper: AppErrorMapper
 
     init(
         getMyAccounts: GetMyAccountsUseCase,
         openAccount: OpenAccountUseCase,
+        connectBankHub: ConnectBankHubUseCase,
+        disconnectBankHub: DisconnectBankHubUseCase,
+        subscribeToAccount: SubscribeToAccountUseCase,
+        eventBus: DomainEventBus,
         appErrorBus: AppErrorBus,
         appErrorMapper: AppErrorMapper
     ) {
         self.getMyAccounts = getMyAccounts
         self.openAccount = openAccount
+        self.connectBankHub = connectBankHub
+        self.disconnectBankHub = disconnectBankHub
+        self.subscribeToAccount = subscribeToAccount
+        self.eventBus = eventBus
         self.appErrorBus = appErrorBus
         self.appErrorMapper = appErrorMapper
+        
+        listenForUpdates()
     }
 
     // MARK: - Load
@@ -39,11 +56,10 @@ final class AccountsListViewModel: ObservableObject {
         do {
             accounts = try await getMyAccounts()
             state = .idle
+            
+            await setupRealTimeUpdates(for: accounts)
         } catch let error as NetworkError {
-            await handleNetworkError(
-                error,
-                localMessage: "Failed to load accounts."
-            )
+            await handleNetworkError(error, localMessage: "Failed to load accounts.")
         } catch {
             state = .error(message: "Failed to load accounts.")
         }
@@ -54,15 +70,37 @@ final class AccountsListViewModel: ObservableObject {
     func refresh() async {
         do {
             accounts = try await getMyAccounts()
+            await setupRealTimeUpdates(for: accounts)
         } catch let error as NetworkError {
-            await handleNetworkError(
-                error,
-                localMessage: "Failed to refresh accounts."
-            )
+            await handleNetworkError(error, localMessage: "Failed to refresh accounts.")
         } catch {
             state = .error(message: "Failed to refresh accounts.")
         }
     }
+    
+    // MARK: - Event Bus Listener
+    
+    private func listenForUpdates() {
+         Task {
+             for await event in eventBus.events {
+                 if case .accountUpdated(let updatedAccountId) = event {
+                     
+                     if self.accounts.contains(where: { $0.id == updatedAccountId }) {
+                         print("🔄 AccountsList: Refreshing balances due to WS ping for \(updatedAccountId)!")
+                     
+                         do {
+                             let updatedAccounts = try await self.getMyAccounts()
+                             withAnimation {
+                                 self.accounts = updatedAccounts
+                             }
+                         } catch {
+                             print("⚠️ Failed to silently refresh accounts: \(error)")
+                         }
+                     }
+                 }
+             }
+         }
+     }
 
     // MARK: - Create
 
@@ -71,15 +109,32 @@ final class AccountsListViewModel: ObservableObject {
 
         do {
             let new = try await openAccount(currency: selectedCurrency)
-            accounts.insert(new, at: 0)
+            withAnimation {
+                accounts.insert(new, at: 0)
+            }
+            
+            try? await subscribeToAccount(accountId: new.id)
+            
             state = .idle
         } catch let error as NetworkError {
-            await handleNetworkError(
-                error,
-                localMessage: "Failed to open a new account."
-            )
+            await handleNetworkError(error, localMessage: "Failed to open a new account.")
         } catch {
             state = .error(message: "Failed to open a new account.")
+        }
+    }
+
+    // MARK: - WebSockets Helper
+    
+    private func setupRealTimeUpdates(for accounts: [BankAccount]) async {
+        await connectBankHub()
+        
+        for account in accounts {
+            do {
+                try await subscribeToAccount(accountId: account.id)
+                print("✅ Subscribed to updates for account: \(account.id)")
+            } catch {
+                print("⚠️ Failed to subscribe to account \(account.id): \(error)")
+            }
         }
     }
 

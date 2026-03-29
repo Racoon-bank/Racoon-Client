@@ -12,93 +12,69 @@ import Foundation
 final class CreditsHomeViewModel: ObservableObject {
     @Published private(set) var state: AsyncViewState = .idle
 
-    @Published private(set) var myCredits: [Credit] = []
-    @Published private(set) var recentCreditIds: [Int64] = []
-    @Published var openCreditIdText: String = ""
+    @Published  var rating: CreditRating?
+    @Published  var applications: [CreditApplication] = []
+    @Published var overduePayments: [OverduePayment] = []
+    @Published  var myCredits: [Credit] = []
 
     private let getMyCredits: GetMyCreditsUseCase
+    private let getMyRating: GetMyCreditRatingUseCase
+    private let getMyApplications: GetMyCreditApplicationsUseCase
+    private let getMyOverduePayments: GetMyOverduePaymentsUseCase
     private let takeCredit: TakeCreditUseCase
-    private let recentStore: RecentCreditsStore
-    private unowned let appState: AppState
 
     init(
         getMyCredits: GetMyCreditsUseCase,
-        takeCredit: TakeCreditUseCase,
-        recentStore: RecentCreditsStore,
-        appState: AppState
+        getMyRating: GetMyCreditRatingUseCase,
+        getMyApplications: GetMyCreditApplicationsUseCase,
+        getMyOverduePayments: GetMyOverduePaymentsUseCase,
+        takeCredit: TakeCreditUseCase
     ) {
         self.getMyCredits = getMyCredits
+        self.getMyRating = getMyRating
+        self.getMyApplications = getMyApplications
+        self.getMyOverduePayments = getMyOverduePayments
         self.takeCredit = takeCredit
-        self.recentStore = recentStore
-        self.appState = appState
     }
 
     func load() async {
         state = .loading
         do {
             async let creditsTask = getMyCredits()
-            async let recentsTask = recentStore.load()
-            let (credits, recents) = try await (creditsTask, recentsTask)
+            async let ratingTask = getMyRating()
+            async let appsTask = getMyApplications()
+            async let overdueTask = getMyOverduePayments()
 
-            myCredits = credits
-            recentCreditIds = recents
+            let (credits, rating, apps, overdues) = try await (creditsTask, ratingTask, appsTask, overdueTask)
+
+            self.myCredits = credits
+            self.rating = rating
+            self.applications = apps
+            self.overduePayments = overdues
+            
             state = .idle
         } catch {
-            state = .error(message: "Failed to load credits.")
+            state = .error(message: "Failed to load credit data.")
         }
     }
 
     func refresh() async {
-        do {
-            myCredits = try await getMyCredits()
-        } catch {
-            state = .error(message: "Failed to refresh credits.")
-        }
+        await load()
     }
 
-    func createCredit(bankAccountId: UUID, tariffId: Int64, amount: Decimal, durationMonths: Int) async -> Int64? {
+    func createCredit(bankAccountId: UUID, tariffId: Int64, amount: Decimal, durationMonths: Int) async {
         state = .loading
-        defer { if case .loading = state { state = .idle } }
-
         do {
-            let credit = try await takeCredit(
+            _ = try await takeCredit(
                 bankAccountId: bankAccountId,
                 tariffId: tariffId,
                 amount: amount,
                 durationMonths: durationMonths
             )
-
-            appState.lastCreatedCreditId = credit.id
-            await recentStore.add(credit.id)
-            recentCreditIds = await recentStore.load()
-
-            myCredits = try await getMyCredits()
-
-            return credit.id
+            await load()
         } catch {
-            state = .error(message: "Failed to take a credit.")
-            return nil
+            state = .error(message: "Failed to apply for a credit.")
         }
-    }
-
-    func openCreditIdFromText() -> Int64? {
-        Int64(openCreditIdText.trimmingCharacters(in: .whitespacesAndNewlines))
-    }
-
-    func markOpened(_ id: Int64) async {
-        appState.lastCreatedCreditId = id
-        await recentStore.add(id)
-        recentCreditIds = await recentStore.load()
-    }
-
-    func removeRecent(_ id: Int64) async {
-        await recentStore.remove(id)
-        recentCreditIds = await recentStore.load()
-    }
-
-    func clearRecents() async {
-        await recentStore.clear()
-        recentCreditIds = await recentStore.load()
     }
 
     func clearError() {

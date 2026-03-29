@@ -14,7 +14,8 @@ public final class AppContainer: @unchecked Sendable {
     private let env: NetworkEnvironment
     private let networkingAssembly: NetworkingAssembly
     private let repositoriesAssembly: RepositoriesAssembly
-
+    public let appRepository: AppRepository
+    
     public let tokenStore: TokenStore
     public let bareHTTP: HTTPClient
     public let authedHTTP: HTTPClient
@@ -31,7 +32,7 @@ public final class AppContainer: @unchecked Sendable {
     public let infoUserRepository: InfoUserRepository
     public let creditRepository: CreditRepository
 
-    public let loginUseCase: LoginUseCase
+    public let loginUseCase: CompleteSSOLoginUseCaseImpl
     public let registerUseCase: RegisterUseCase
     public let logoutUseCase: LogoutUseCase
     public let getProfileUseCase: GetProfileUseCase
@@ -61,10 +62,21 @@ public final class AppContainer: @unchecked Sendable {
     public let syncThemeFromProfileUseCase: SyncThemeFromProfileUseCase
     public let syncHiddenAccountsUseCase: SyncHiddenAccountsUseCase
     
+    public let connectBankHubUseCase: ConnectBankHubUseCase
+    public let disconnectBankHubUseCase: DisconnectBankHubUseCase
+    public let subscribeToAccountUseCase: SubscribeToAccountUseCase
+    public let unsubscribeFromAccountUseCase: UnsubscribeFromAccountUseCase
+    
+    public let getMyCreditRatingUseCase: GetMyCreditRatingUseCase
+    public let getMyCreditApplicationsUseCase: GetMyCreditApplicationsUseCase
+    public let getMyOverduePaymentsUseCase: GetMyOverduePaymentsUseCase
+    
+    public let transferMoneyUseCase: TransferUseCase
+    
     private init() {
         self.env = NetworkEnvironment.fromBuildConfig()
         self.networkingAssembly = NetworkingAssembly(env: env)
-        self.repositoriesAssembly = RepositoriesAssembly(networking: networkingAssembly)
+        self.repositoriesAssembly = RepositoriesAssembly(networking : networkingAssembly)
 
         self.tokenStore = networkingAssembly.makeTokenStore()
         self.recentCreditsStore = UserDefaultsRecentCreditsStore()
@@ -88,23 +100,30 @@ public final class AppContainer: @unchecked Sendable {
             tokenRefresher: tokenRefresher,
             appErrorBus: appErrorBus
         )
-
+        self.appSettingsStorage = UserDefaultsAppSettingsStorage()
+        self.appRepository = AppRepositoryLive(client: authedHTTP)
+        
             self.coreBankAccountRepository = repositoriesAssembly.makeCoreBankAccountRepository(authedClient: authedHTTP)
             self.infoUserRepository = repositoriesAssembly.makeInfoUserRepository(authedClient: authedHTTP)
             self.creditRepository = repositoriesAssembly.makeCreditRepository(authedClient: authedHTTP)
 
-        self.bankHubClient = networkingAssembly.makeBankHubClient(tokenStore: tokenStore)
+        self.bankHubClient = networkingAssembly.makeBankHubClient(tokenStore: tokenStore, eventBus: eventBus)
 
         let useCases = UseCasesAssembly(
-            authRepo: coreAuthRepository,
-            bankRepo: coreBankAccountRepository,
-            infoRepo: infoUserRepository,
-            creditRepo: creditRepository,
-            events: eventBus,
-            tokenStore: tokenStore
-        )
+                   authRepo: coreAuthRepository,
+                   bankRepo: coreBankAccountRepository,
+                   infoRepo: infoUserRepository,
+                   creditRepo: creditRepository,
+                   events: eventBus,
+                   tokenStore: tokenStore,
+                   bankHubClient: bankHubClient,
+                   appSettingsStorage: appSettingsStorage
+               )
 
-        self.loginUseCase = useCases.makeLoginUseCase()
+        self.loginUseCase = CompleteSSOLoginUseCaseImpl(
+                  tokenStore: self.tokenStore,
+                  events: self.eventBus
+              )
         self.registerUseCase = useCases.makeRegisterUseCase()
         self.logoutUseCase = useCases.makeLogoutUseCase()
         self.getProfileUseCase = useCases.makeGetProfileUseCase()
@@ -125,20 +144,25 @@ public final class AppContainer: @unchecked Sendable {
         self.repayCreditUseCase = useCases.makeRepayCreditUseCase()
         self.getCreditUseCase = useCases.makeGetCreditUseCase()
         self.getCreditPaymentsUseCase = useCases.makeGetCreditPaymentsUseCase()
-        
-        self.appSettingsStorage = UserDefaultsAppSettingsStorage()
+        self.getMyCreditRatingUseCase = useCases.makeGetMyCreditRatingUseCase()
+        self.getMyCreditApplicationsUseCase = useCases.makeGetMyCreditApplicationsUseCase()
+        self.getMyOverduePaymentsUseCase = useCases.makeGetMyOverduePaymentsUseCase()
+       
         self.loadAppSettingsUseCase = LoadAppSettingsUseCaseMock()
-        self.setThemeUseCase = SetThemeUseCaseImpl(
-            storage: appSettingsStorage,
-            events: eventBus
-        )
+        
         self.toggleHiddenAccountUseCase = ToggleHiddenAccountUseCaseImpl(
             storage: appSettingsStorage,
             events: eventBus
         )
 
+        self.setThemeUseCase = SetThemeUseCaseImpl(
+            appRepo: self.appRepository,
+            storage: appSettingsStorage,
+            events: eventBus
+        )
+
         self.syncThemeFromProfileUseCase = SyncThemeFromProfileUseCaseImpl(
-            getProfile: self.getProfileUseCase,
+            appRepo: self.appRepository,
             storage: appSettingsStorage,
             events: eventBus
         )
@@ -147,5 +171,11 @@ public final class AppContainer: @unchecked Sendable {
             getAccounts: self.getMyAccountsUseCase,
             storage: appSettingsStorage
         )
+        self.connectBankHubUseCase = useCases.makeConnectBankHubUseCase()
+        self.disconnectBankHubUseCase = useCases.makeDisconnectBankHubUseCase()
+        self.subscribeToAccountUseCase = useCases.makeSubscribeToAccountUseCase()
+        self.unsubscribeFromAccountUseCase = useCases.makeUnsubscribeFromAccountUseCase()
+        
+        self.transferMoneyUseCase = useCases.makeTransferMoneyUseCase()
     }
 }

@@ -27,7 +27,7 @@ public struct SyncHiddenAccountsUseCaseImpl: SyncHiddenAccountsUseCase {
         let hiddenIds = Set(
             accounts
                 .filter { $0.isHidden }
-                .map { $0.id.uuidString }
+                .map { $0.id }
         )
 
         let current = storage.load()

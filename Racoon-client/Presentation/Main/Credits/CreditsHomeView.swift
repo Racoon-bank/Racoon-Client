@@ -22,9 +22,18 @@ struct CreditsHomeView: View {
 
     var body: some View {
         List {
-            heroSection
+            ratingSection
+            
+            
+            if !viewModel.overduePayments.isEmpty {
+                overdueSection
+            }
+            
+            if !viewModel.applications.isEmpty {
+                applicationsSection
+            }
+            
             myCreditsSection
-            recentSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Credits")
@@ -35,7 +44,6 @@ struct CreditsHomeView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .accessibilityLabel("Take credit")
             }
 
             ToolbarItem(placement: .topBarTrailing) {
@@ -53,26 +61,68 @@ struct CreditsHomeView: View {
 }
 
 private extension CreditsHomeView {
-    var heroSection: some View {
+    var ratingSection: some View {
         Section {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "creditcard")
+                Image(systemName: "star.fill")
                     .font(.title2)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(.yellow)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Your credits")
+                    Text("Credit Rating: \(viewModel.rating?.score.description ?? "Unknown")")
                         .font(.headline)
-                    Text("Track remaining balance, payments, and due dates.")
+                    Text("Level: \(viewModel.rating?.ratingLevel ?? "Unknown")")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-
                 Spacer()
             }
             .padding(.vertical, 6)
         }
     }
+    
+    var overdueSection: some View {
+        Section("Overdue Payments") {
+            ForEach(viewModel.overduePayments, id: \.scheduleId) { (overdue: OverduePayment) in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Credit #\(overdue.creditId)")
+                        .font(.headline)
+                        .foregroundStyle(.red)
+                    Text("Amount due: \(money(overdue.remainingDue))")
+                        .font(.subheadline)
+                    Text("Overdue by \(overdue.overdueDays) days")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+    
+    var applicationsSection: some View {
+           Section("Applications") {
+               ForEach(viewModel.applications, id: \.id) { app in
+                   HStack {
+                       VStack(alignment: .leading, spacing: 4) {
+                           Text(app.tariffName)
+                               .font(.headline)
+                           Text("\(money(app.amount))")
+                               .font(.subheadline)
+                               .foregroundStyle(.secondary)
+                       }
+                       Spacer()
+                       Text(app.status.rawValue)
+                           .font(.caption)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(statusColor(for: app.status).opacity(0.2))
+                           .foregroundStyle(statusColor(for: app.status))
+                           .clipShape(Capsule())
+                   }
+                   .padding(.vertical, 4)
+               }
+           }
+       }
 
     var myCreditsSection: some View {
         Section("My credits") {
@@ -81,60 +131,25 @@ private extension CreditsHomeView {
             } else {
                 let active = viewModel.myCredits.filter { $0.status != .paidOff && $0.status != .cancelled }
                 let closed = viewModel.myCredits.filter { $0.status == .paidOff || $0.status == .cancelled }
-
+                
                 if !active.isEmpty {
                     Section("Active") {
-                        ForEach(active) { credit in
+                        ForEach(active, id: \.id) { credit in
                             Button { destination = CreditNav(id: credit.id) } label: {
                                 CreditRowView(credit: credit)
                             }
                         }
                     }
                 }
-
+                
                 if !closed.isEmpty {
                     Section("Closed") {
-                        ForEach(closed) { credit in
+                        ForEach(closed, id: \.id) { credit in
                             Button { destination = CreditNav(id: credit.id) } label: {
                                 CreditRowView(credit: credit)
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-
-    var recentSection: some View {
-        Section("Recently opened") {
-            if viewModel.recentCreditIds.isEmpty {
-                Text("No recent credits.")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(viewModel.recentCreditIds, id: \.self) { id in
-                    Button {
-                        destination = CreditNav(id: id)
-                    } label: {
-                        HStack {
-                            Text("Credit")
-                            Spacer()
-                            Text("#\(id)")
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .swipeActions {
-                        Button(role: .destructive) { Task { await viewModel.removeRecent(id) } } label: {
-                            Label("Remove", systemImage: "trash")
-                        }
-                    }
-                }
-
-                Button(role: .destructive) {
-                    Task { await viewModel.clearRecents() }
-                } label: {
-                    Text("Clear recents")
                 }
             }
         }
@@ -150,7 +165,7 @@ private extension CreditsHomeView {
             Button {
                 showTakeSheet = true
             } label: {
-                Text("Take a credit")
+                Text("Apply for a credit")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
             }
@@ -160,7 +175,8 @@ private extension CreditsHomeView {
         .padding(.vertical, 8)
     }
 }
-// MARK: - Sheet
+
+// MARK: - Helpers & Navigation
 private extension CreditsHomeView {
     func takeCreditSheet() -> some View {
         let factory = ViewModelFactory(container: container)
@@ -168,33 +184,25 @@ private extension CreditsHomeView {
             viewModel: factory.makeTakeCreditSheetViewModel()
         ) { input in
             Task {
-                if let id = await viewModel.createCredit(
+                await viewModel.createCredit(
                     bankAccountId: input.bankAccountId,
                     tariffId: input.tariffId,
                     amount: input.amount,
                     durationMonths: input.durationMonths
-                ) {
-                    destination = CreditNav(id: id)
-                }
+                    // Note: if takeCredit expects currency, update createCredit args accordingly!
+                )
             }
         }
     }
-}
 
-// MARK: - Destination
-private extension CreditsHomeView {
     func creditDestination(_ nav: CreditNav) -> some View {
         let factory = ViewModelFactory(container: container)
         return CreditDetailsView(
             viewModel: factory.makeCreditDetailsViewModel(creditId: nav.id),
             creditId: nav.id
         )
-        .task { await viewModel.markOpened(nav.id) }
     }
-}
 
-// MARK: - Alert
-private extension CreditsHomeView {
     var errorPresentedBinding: Binding<Bool> {
         Binding(
             get: { viewModel.state.errorMessage != nil },
@@ -212,6 +220,14 @@ private extension CreditsHomeView {
 
     func money(_ value: Decimal) -> String {
         NSDecimalNumber(decimal: value).stringValue
+    }
+    
+    func statusColor(for status: CreditApplicationStatus) -> Color {
+        switch status {
+        case .pending: return .orange
+        case .approved: return .green
+        case .rejected: return .red
+        }
     }
 }
 

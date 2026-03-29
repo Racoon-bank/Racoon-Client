@@ -15,14 +15,24 @@ public protocol WithdrawUseCase: Sendable {
 public struct WithdrawUseCaseImpl: WithdrawUseCase {
     private let repo: CoreBankAccountRepository
     private let events: DomainEventBus
-    public init(repo: CoreBankAccountRepository, events: DomainEventBus) {
+    private let hiddenStorage: AppSettingsStorage
+    
+    public init(
+        repo: CoreBankAccountRepository,
+        events: DomainEventBus,
+        hiddenStorage: AppSettingsStorage
+    ) {
         self.repo = repo
         self.events = events
+        self.hiddenStorage = hiddenStorage
     }
 
     public func callAsFunction(accountId: UUID, amount: Decimal) async throws -> BankAccount {
         let dto = try await repo.withdraw(id: accountId, amount: (amount as NSDecimalNumber).doubleValue)
+        
         await events.publish(.moneyWithdrawn(accountId: accountId, amount: amount))
-        return BankAccountMapper.toDomain(dto)
+        
+        let hiddenIds = hiddenStorage.load().hiddenAccountIds
+        return BankAccountMapper.toDomain(dto, hiddenAccountIds: hiddenIds)
     }
 }

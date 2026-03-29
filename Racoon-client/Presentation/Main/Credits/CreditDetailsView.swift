@@ -83,15 +83,18 @@ private extension CreditDetailsView {
                     Metric(title: "Monthly", value: money(viewModel.credit?.monthlyPayment))
                 }
 
-                if let credit = viewModel.credit, showsNextPayment(credit.status) {
-                    HStack {
-                        Text("Next payment").foregroundStyle(.secondary)
-                        Spacer()
-                        Text(credit.nextPaymentDate.formatted(date: .abbreviated, time: .omitted))
-                            .foregroundStyle(.secondary)
-                    }
-                    .font(.caption)
-                }
+                if let credit = viewModel.credit,
+                             showsNextPayment(credit.status),
+                             let nextDate = credit.nextPaymentDate {
+                              
+                              HStack {
+                                  Text("Next payment").foregroundStyle(.secondary)
+                                  Spacer()
+                                  Text(nextDate.formatted(date: .abbreviated, time: .omitted))
+                                      .foregroundStyle(.secondary)
+                              }
+                              .font(.caption)
+                          }
             }
             .padding(.vertical, 6)
         }

@@ -5,17 +5,20 @@
 //  Created by dark type on 26.02.2026.
 //
 
+import Foundation
 
 public enum InfoRouter: APIRouter {
     case profile
-
     case register(username: String, email: String?, password: String)
-
     case login(email: String, password: String)
     case refresh(refreshToken: String)
     case getSsoLoginPage(redirectUrl: String)
-        case switchTheme
     case logout(accessToken: String)
+    
+    case appInfo
+    case switchAppTheme
+    case hideBankAccount(id: UUID)
+    case revealBankAccount(id: UUID)
 
     public var endpoint: Endpoint {
         switch self {
@@ -54,20 +57,24 @@ public enum InfoRouter: APIRouter {
                 headers: ["Authorization": "Bearer \(accessToken)"]
             )
         
-    case .getSsoLoginPage(let redirectUrl):
-        
-               return Endpoint(
-                   service: .info,
-                   method: .GET,
-                   path: "/api/auth/login?redirectUrl=\(redirectUrl)"
-               )
-               
-           case .switchTheme:
-               return Endpoint(
-                   service: .info,
-                   method: .PUT,
-                   path: "/api/user/theme"
-               )
-           }
+        case .getSsoLoginPage(let redirectUrl):
+            return Endpoint(
+                service: .info,
+                method: .GET,
+                path: "/api/auth/login?redirectUrl=\(redirectUrl)"
+            )
+            
+        case .appInfo:
+            return Endpoint(service: .info, method: .GET, path: "/app/info")
+            
+        case .switchAppTheme:
+            return Endpoint(service: .info, method: .PUT, path: "/app/theme")
+            
+        case .hideBankAccount(let id):
+            return Endpoint(service: .info, method: .POST, path: "/app/bankAccount/\(id.uuidString.lowercased())")
+            
+        case .revealBankAccount(let id):
+            return Endpoint(service: .info, method: .DELETE, path: "/app/bankAccount/\(id.uuidString.lowercased())")
+        }
     }
 }

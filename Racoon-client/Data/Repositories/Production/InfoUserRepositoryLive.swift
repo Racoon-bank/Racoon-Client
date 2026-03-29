@@ -15,6 +15,6 @@ public final class InfoUserRepositoryLive: InfoUserRepository {
         try await client.send(InfoRouter.profile, as: UserProfileDto.self)
     }
     public func switchTheme() async throws {
-           try await client.sendNoResponse(InfoRouter.switchTheme)
+        try await client.sendNoResponse(InfoRouter.switchAppTheme)
        }
 }

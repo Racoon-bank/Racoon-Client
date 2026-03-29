@@ -11,69 +11,33 @@ import SwiftUI
 struct LoginView: View {
     @StateObject private var viewModel: LoginViewModel
 
-    private enum Field: Hashable {
-        case email
-        case password
-    }
-
-    @FocusState private var focusedField: Field?
-
     init(viewModel: LoginViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
-           VStack(spacing: 16) {
-               header
+        VStack(spacing: 32) {
+            header
+            
+            submitButton
 
-               VStack(spacing: 12) {
-                   emailField
-                   passwordField
-               }
-
-               submitButton
-
-               Spacer(minLength: 0)
-           }
-           .padding(20)
-           .navigationTitle("Sign in")
-           .navigationBarTitleDisplayMode(.large)
-           .onAppear { focusedField = .email }
-           
-           .errorAlert(errorMessage: viewModel.state.errorMessage, clearError: { viewModel.clearError() })
-       }
+            Spacer(minLength: 0)
+        }
+        .padding(20)
+        .navigationTitle("Sign in")
+        .navigationBarTitleDisplayMode(.large)
+        .errorAlert(errorMessage: viewModel.state.errorMessage, clearError: { viewModel.clearError() })
+    }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Welcome back")
+            Text("Welcome")
                 .font(.title2).bold()
-            Text("Use your account credentials to continue.")
+            Text("Sign in using your organization's SSO.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var emailField: some View {
-        TextField("Email", text: $viewModel.email)
-            .textContentType(.username)
-            .keyboardType(.emailAddress)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .submitLabel(.next)
-            .focused($focusedField, equals: .email)
-            .onSubmit { focusedField = .password }
-            .textFieldStyle(.roundedBorder)
-    }
-
-    private var passwordField: some View {
-        SecureField("Password", text: $viewModel.password)
-            .textContentType(.password)
-            .textInputAutocapitalization(.never)
-            .submitLabel(.go)
-            .focused($focusedField, equals: .password)
-            .onSubmit { Task { await viewModel.submit() } }
-            .textFieldStyle(.roundedBorder)
     }
 
     private var submitButton: some View {
@@ -83,13 +47,14 @@ struct LoginView: View {
             HStack {
                 if viewModel.state.isLoading {
                     ProgressView().controlSize(.small)
+                        .padding(.trailing, 4)
                 }
-                Text(viewModel.state.isLoading ? "Signing in..." : "Sign in")
+                Text(viewModel.state.isLoading ? "Opening browser..." : "Sign in with SSO")
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(PrimaryButtonStyle(isEnabled: viewModel.canSubmit))
-        .disabled(!viewModel.canSubmit)
+        .buttonStyle(PrimaryButtonStyle(isEnabled: !viewModel.state.isLoading))
+        .disabled(viewModel.state.isLoading)
     }
 }

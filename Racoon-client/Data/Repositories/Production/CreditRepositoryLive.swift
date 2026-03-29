@@ -8,6 +8,23 @@
 import Foundation
 
 public final class CreditRepositoryLive: CreditRepository {
+    public func getMyCreditRating() async throws -> CreditRatingDto {
+           try await client.send(CreditRouter.getMyCreditRating, as: CreditRatingDto.self)
+       }
+
+       public func getMyApplications() async throws -> [CreditApplicationDto] {
+           try await client.send(CreditRouter.getMyApplications, as: [CreditApplicationDto].self)
+       }
+
+       public func getMyOverduePayments() async throws -> [OverduePaymentDto] {
+           try await client.send(CreditRouter.getMyOverduePayments, as: [OverduePaymentDto].self)
+       }
+    public func take(bankAccountId: String, tariffId: Int64, amount: Double, durationMonths: Int) async throws -> TakeCreditResultDto {
+           try await client.send(
+               CreditRouter.take(bankAccountId: bankAccountId, tariffId: tariffId, amount: amount, durationMonths: durationMonths),
+               as: TakeCreditResultDto.self
+           )
+       }
     private let client: HTTPClient
     public init(client: HTTPClient) { self.client = client }
 

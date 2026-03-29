@@ -102,9 +102,7 @@ public final class HTTPClient: @unchecked Sendable {
             return EmptyResponse() as! T
         }
 
-        guard !data.isEmpty else {
-            throw NetworkError.emptyBody
-        }
+       
 
         do {
             return try decoder.decode(T.self, from: data)

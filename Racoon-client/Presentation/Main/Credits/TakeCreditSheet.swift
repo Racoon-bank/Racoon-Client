@@ -24,6 +24,15 @@ struct TakeCreditSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Currency") {
+                    Picker("Currency", selection: $viewModel.selectedCurrency) {
+                        Text("RUB").tag(Currency.RUB)
+                        Text("USD").tag(Currency.USD)
+                        Text("EUR").tag(Currency.EUR)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 Section("Bank account") {
                     if viewModel.accounts.isEmpty {
                         Text("No accounts available.")
@@ -31,7 +40,7 @@ struct TakeCreditSheet: View {
                     } else {
                         Picker("Account", selection: $viewModel.selectedAccountId) {
                             ForEach(viewModel.accounts) { a in
-                                Text("\(String(describing: a.accountNumber)) • \(money(a.balance))")
+                                Text("\(a.accountNumber) • \(money(a.balance)) \(a.currency.symbol)")
                                     .tag(Optional(a.id))
                             }
                         }
@@ -66,13 +75,13 @@ struct TakeCreditSheet: View {
                     Section { Text(errorText).foregroundStyle(.red) }
                 }
             }
-            .navigationTitle("Take credit")
+            .navigationTitle("Apply for Credit")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Create") {
+                    Button("Apply") {
                         guard let input = viewModel.parse() else {
                             errorText = "Please fill all fields correctly."
                             return

@@ -8,32 +8,33 @@
 import Foundation
 
 public protocol TransferUseCase: Sendable {
-    func callAsFunction(fromAccountId: UUID, toAccountNumber: String?, amount: Decimal) async throws -> BankAccount
+    
+    func callAsFunction(fromAccountId: UUID, toAccountNumber: String?, amount: Decimal) async throws
 }
 
 public struct TransferUseCaseImpl: TransferUseCase {
     private let repo: CoreBankAccountRepository
     private let events: DomainEventBus
 
-    public init(repo: CoreBankAccountRepository, events: DomainEventBus = NoopDomainEventBus()) {
+    public init(
+        repo: CoreBankAccountRepository,
+        events: DomainEventBus = NoopDomainEventBus()
+    ) {
         self.repo = repo
         self.events = events
     }
 
-    public func callAsFunction(fromAccountId: UUID, toAccountNumber: String?, amount: Decimal) async throws -> BankAccount {
-        let dto = try await repo.transfer(
-            fromAccountId: fromAccountId, 
-            toAccountNumber: toAccountNumber, 
+    public func callAsFunction(fromAccountId: UUID, toAccountNumber: String?, amount: Decimal) async throws {
+        try await repo.transfer(
+            fromAccountId: fromAccountId,
+            toAccountNumber: toAccountNumber,
             amount: (amount as NSDecimalNumber).doubleValue
         )
-        let domain = BankAccountMapper.toDomain(dto)
         
         await events.publish(.moneyTransferred(
-            fromAccountId: fromAccountId, 
-            toAccountNumber: toAccountNumber, 
+            fromAccountId: fromAccountId,
+            toAccountNumber: toAccountNumber,
             amount: amount
         ))
-        
-        return domain
     }
 }

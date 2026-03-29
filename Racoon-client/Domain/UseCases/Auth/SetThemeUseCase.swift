@@ -9,26 +9,27 @@
 public protocol SetThemeUseCase: Sendable {
     func callAsFunction(_ theme: AppThemePreference) async throws
 }
+
 public struct SetThemeUseCaseImpl: SetThemeUseCase {
+    private let appRepo: AppRepository
     private let storage: AppSettingsStorage
     private let events: DomainEventBus
 
-    public init(storage: AppSettingsStorage, events: DomainEventBus) {
+    public init(appRepo: AppRepository, storage: AppSettingsStorage, events: DomainEventBus) {
+        self.appRepo = appRepo
         self.storage = storage
         self.events = events
     }
 
     public func callAsFunction(_ theme: AppThemePreference) async throws {
-        let updated = storage.load().withTheme(theme)
-        storage.save(updated)
-
-        let domainTheme: Theme
-        switch theme {
-        case .light: domainTheme = .Light
-        case .dark: domainTheme = .Dark
-        case .system:
-            return
+        let current = storage.load()
+        
+        if current.theme != theme {
+            _ = try? await appRepo.switchTheme()
         }
+
+        let updated = current.withTheme(theme)
+        storage.save(updated)
 
         await events.publish(.themeSwitched)
     }

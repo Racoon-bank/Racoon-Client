@@ -26,7 +26,7 @@ public actor MockDatabase {
             userId: userId,
             accountNumber: "40817 0000 0000 0001",
             balance: 1250.0,
-            createdAt: Date().addingTimeInterval(-86400 * 5), isHidden: false,
+            createdAt: Date().addingTimeInterval(-86400 * 5),
             currency: "RUB"
         )
         let a2 = BankAccountDto(
@@ -34,7 +34,7 @@ public actor MockDatabase {
             userId: userId,
             accountNumber: "40817 0000 0000 0002",
             balance: 0.0,
-            createdAt: Date().addingTimeInterval(-86400 * 2), isHidden: false,
+            createdAt: Date().addingTimeInterval(-86400 * 2),
             currency: "RUB"
         )
         accounts[a1.id] = a1
@@ -74,7 +74,7 @@ public actor MockDatabase {
             userId: userId,
             accountNumber: "40817 0000 0000 \(String(Int.random(in: 1000...9999)))",
             balance: 0.0,
-            createdAt: Date(), isHidden: false,
+            createdAt: Date(),
             currency: "RUB"
         )
         accounts[id] = dto
@@ -97,7 +97,7 @@ public actor MockDatabase {
             userId: acc.userId,
             accountNumber: acc.accountNumber,
             balance: acc.balance + amount,
-            createdAt: acc.createdAt, isHidden: false,
+            createdAt: acc.createdAt,
             currency: "RUB"
         )
         accounts[id] = acc
@@ -124,7 +124,6 @@ public actor MockDatabase {
             accountNumber: acc.accountNumber,
             balance: acc.balance - amount,
             createdAt: acc.createdAt,
-            isHidden: false,
             currency: "RUB"
         )
         accounts[id] = acc
@@ -181,10 +180,10 @@ public actor MockDatabase {
             tariffId: tariffId,
             tariffName: tariffName,
             interestRate: interestRate,
-            amount: amount,
+            currency: Currency.RUB, amount: amount,
             remainingAmount: amount,
             monthlyPayment: monthlyPayment,
-            durationMonths: durationMonths,
+            totalAmount: totalToPay, durationMonths: durationMonths,
             remainingMonths: durationMonths,
             accumulatedPenalty: 0.0,
             overdueDays: 0,
@@ -192,7 +191,7 @@ public actor MockDatabase {
             issueDate: now,
             nextPaymentDate: nextPay,
             createdAt: now,
-            updatedAt: nil
+            updatedAt: Date()
         )
 
         credits[id] = dto
@@ -224,16 +223,16 @@ public actor MockDatabase {
             tariffId: credit.tariffId,
             tariffName: credit.tariffName,
             interestRate: credit.interestRate,
-            amount: credit.amount,
+            currency: Currency.RUB, amount: credit.amount,
             remainingAmount: newRemaining,
             monthlyPayment: credit.monthlyPayment,
-            durationMonths: credit.durationMonths,
+            totalAmount: credit.totalAmount, durationMonths: credit.durationMonths,
             remainingMonths: newRemainingMonths,
             accumulatedPenalty: credit.accumulatedPenalty,
             overdueDays: credit.overdueDays,
             status: newStatus,
             issueDate: credit.issueDate,
-            nextPaymentDate: Calendar.current.date(byAdding: .month, value: 1, to: credit.nextPaymentDate) ?? credit.nextPaymentDate,
+            nextPaymentDate: Calendar.current.date(byAdding: .month, value: 1, to: credit.nextPaymentDate ?? Date()) ?? credit.nextPaymentDate,
             createdAt: credit.createdAt,
             updatedAt: Date()
         )
@@ -292,7 +291,7 @@ public actor MockDatabase {
         let interestRate = credit.interestRate
 
         for i in 0..<months {
-            let paymentDate = Calendar.current.date(byAdding: .month, value: i, to: base) ?? base
+            let paymentDate = Date()
 
             let interestPart = remaining * (interestRate / 100.0)
             let principalPart = max(0, monthlyPayment - interestPart)

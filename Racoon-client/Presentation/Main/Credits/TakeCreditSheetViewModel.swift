@@ -17,6 +17,7 @@ final class TakeCreditSheetViewModel: ObservableObject {
 
     @Published var selectedAccountId: UUID?
     @Published var selectedTariffId: Int64?
+    @Published var selectedCurrency: Currency = .RUB
 
     @Published var amountText: String = ""
     @Published var durationMonthsText: String = ""
@@ -62,7 +63,13 @@ final class TakeCreditSheetViewModel: ObservableObject {
             months > 0
         else { return nil }
 
-        return TakeCreditInput(bankAccountId: bankAccountId, tariffId: tariffId, amount: amount, durationMonths: months)
+        return TakeCreditInput(
+            bankAccountId: bankAccountId,
+            tariffId: tariffId,
+            amount: amount,
+            durationMonths: months,
+             currency: selectedCurrency
+        )
     }
 
     func clearError() {

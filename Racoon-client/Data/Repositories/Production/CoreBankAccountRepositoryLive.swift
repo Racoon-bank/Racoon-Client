@@ -38,10 +38,9 @@ public final class CoreBankAccountRepositoryLive: CoreBankAccountRepository {
             try await client.sendNoResponse(CoreRouter.changeVisibility(id: id))
         }
         
-        public func transfer(fromAccountId: UUID, toAccountNumber: String?, amount: Double) async throws -> BankAccountDto {
-            try await client.send(
-                CoreRouter.transfer(fromAccountId: fromAccountId, toAccountNumber: toAccountNumber, amount: amount),
-                as: BankAccountDto.self
+    public func transfer(fromAccountId: UUID, toAccountNumber: String?, amount: Double) async throws {
+            try await client.sendNoResponse(
+                CoreRouter.transfer(fromAccountId: fromAccountId, toAccountNumber: toAccountNumber, amount: amount)
             )
         }
 }

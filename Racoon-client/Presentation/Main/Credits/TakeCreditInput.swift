@@ -13,4 +13,5 @@ struct TakeCreditInput: Sendable {
     let tariffId: Int64
     let amount: Decimal
     let durationMonths: Int
+    let currency: Currency
 }
