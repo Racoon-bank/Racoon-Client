@@ -19,12 +19,12 @@ public final class CoreBankAccountRepositoryLive: CoreBankAccountRepository {
         try await client.send(CoreRouter.myAccounts, as: [BankAccountDto].self)
     }
 
-    public func deposit(id: UUID, amount: Double) async throws -> BankAccountDto {
-        try await client.send(CoreRouter.deposit(id: id, amount: amount), as: BankAccountDto.self)
+    public func deposit(id: UUID, amount: Double) async throws {
+        try await client.sendNoResponse(CoreRouter.deposit(id: id, amount: amount))
     }
 
-    public func withdraw(id: UUID, amount: Double) async throws -> BankAccountDto {
-        try await client.send(CoreRouter.withdraw(id: id, amount: amount), as: BankAccountDto.self)
+    public func withdraw(id: UUID, amount: Double) async throws {
+        try await client.sendNoResponse(CoreRouter.withdraw(id: id, amount: amount))
     }
 
     public func history(id: UUID) async throws -> [BankAccountOperationDto] {

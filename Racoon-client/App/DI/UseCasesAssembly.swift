@@ -5,7 +5,6 @@
 //  Created by dark type on 27.02.2026.
 //
 
-
 import Foundation
 
 public struct UseCasesAssembly: Sendable {
@@ -45,6 +44,7 @@ public struct UseCasesAssembly: Sendable {
     public func makeRegisterUseCase() -> RegisterUseCase {
         RegisterUseCaseImpl(authRepo: authRepo, events: events)
     }
+
     public func makeLogoutUseCase() -> LogoutUseCase {
         LogoutUseCaseImpl(authRepo: authRepo, tokenStore: tokenStore, events: events)
     }
@@ -66,11 +66,11 @@ public struct UseCasesAssembly: Sendable {
     }
 
     public func makeDepositUseCase() -> DepositUseCase {
-        DepositUseCaseImpl(repo: bankRepo, events: events, hiddenStorage: appSettingsStorage)
+        DepositUseCaseImpl(repo: bankRepo, events: events)
     }
 
     public func makeWithdrawUseCase() -> WithdrawUseCase {
-        WithdrawUseCaseImpl(repo: bankRepo, events: events, hiddenStorage: appSettingsStorage)
+        WithdrawUseCaseImpl(repo: bankRepo, events: events)
     }
 
     public func makeGetAccountHistoryUseCase() -> GetAccountHistoryUseCase {
@@ -78,12 +78,13 @@ public struct UseCasesAssembly: Sendable {
     }
 
     public func makeGetMyCreditsUseCase() -> GetMyCreditsUseCase {
-           GetMyCreditsUseCaseImpl(creditRepo: creditRepo)
-       }
+        GetMyCreditsUseCaseImpl(creditRepo: creditRepo)
+    }
 
     public func makeTakeCreditUseCase() -> TakeCreditUseCase {
-           TakeCreditUseCaseImpl(repo: creditRepo)
-       }
+        TakeCreditUseCaseImpl(repo: creditRepo)
+    }
+
     public func makeRepayCreditUseCase() -> RepayCreditUseCase {
         RepayCreditUseCaseImpl(creditRepo: creditRepo, events: events)
     }
@@ -107,32 +108,36 @@ public struct UseCasesAssembly: Sendable {
     public func makeGetCreditScheduleUseCase() -> GetCreditScheduleUseCase {
         GetCreditScheduleUseCaseImpl(creditRepo: creditRepo)
     }
+
     public func makeTransferMoneyUseCase() -> TransferUseCase {
         TransferUseCaseImpl(repo: bankRepo)
     }
+
     public func makeConnectBankHubUseCase() -> ConnectBankHubUseCase {
-            ConnectBankHubUseCaseImpl(client: bankHubClient)
-        }
+        ConnectBankHubUseCaseImpl(client: bankHubClient)
+    }
 
-        public func makeDisconnectBankHubUseCase() -> DisconnectBankHubUseCase {
-            DisconnectBankHubUseCaseImpl(client: bankHubClient)
-        }
+    public func makeDisconnectBankHubUseCase() -> DisconnectBankHubUseCase {
+        DisconnectBankHubUseCaseImpl(client: bankHubClient)
+    }
 
-        public func makeSubscribeToAccountUseCase() -> SubscribeToAccountUseCase {
-            SubscribeToAccountUseCaseImpl(client: bankHubClient)
-        }
+    public func makeSubscribeToAccountUseCase() -> SubscribeToAccountUseCase {
+        SubscribeToAccountUseCaseImpl(client: bankHubClient)
+    }
 
-        public func makeUnsubscribeFromAccountUseCase() -> UnsubscribeFromAccountUseCase {
-            UnsubscribeFromAccountUseCaseImpl(client: bankHubClient)
-        }
+    public func makeUnsubscribeFromAccountUseCase() -> UnsubscribeFromAccountUseCase {
+        UnsubscribeFromAccountUseCaseImpl(client: bankHubClient)
+    }
+
     public func makeGetMyCreditRatingUseCase() -> GetMyCreditRatingUseCase {
-            GetMyCreditRatingUseCaseImpl(repo: creditRepo)
-        }
-        public func makeGetMyCreditApplicationsUseCase() -> GetMyCreditApplicationsUseCase {
-            GetMyCreditApplicationsUseCaseImpl(repo: creditRepo)
-        }
-        public func makeGetMyOverduePaymentsUseCase() -> GetMyOverduePaymentsUseCase {
-            GetMyOverduePaymentsUseCaseImpl(repo: creditRepo)
-        }
+        GetMyCreditRatingUseCaseImpl(repo: creditRepo)
+    }
 
+    public func makeGetMyCreditApplicationsUseCase() -> GetMyCreditApplicationsUseCase {
+        GetMyCreditApplicationsUseCaseImpl(repo: creditRepo)
+    }
+
+    public func makeGetMyOverduePaymentsUseCase() -> GetMyOverduePaymentsUseCase {
+        GetMyOverduePaymentsUseCaseImpl(repo: creditRepo)
+    }
 }

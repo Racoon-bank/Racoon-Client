@@ -11,13 +11,13 @@ import Foundation
 public final class HTTPClient: @unchecked Sendable {
     private let session: URLSession
     private let decoder: JSONDecoder
-    private let builder: RequestBuilder
+    public let builder: RequestBuilder // Made public so monitoring batcher can reuse it
     private let interceptors: [HTTPInterceptor]
-
+    
     private var logger: NetworkLoggerInterceptor? {
         interceptors.compactMap { $0 as? NetworkLoggerInterceptor }.first
     }
-
+    
     public init(
         session: URLSession = .shared,
         builder: RequestBuilder,
@@ -29,63 +29,66 @@ public final class HTTPClient: @unchecked Sendable {
         self.decoder = decoder
         self.interceptors = interceptors
     }
-
+    
     public func send<T: Decodable>(_ route: APIRouter, as type: T.Type) async throws -> T {
         var request = try builder.build(route.endpoint)
         for i in interceptors {
             request = try await i.adapt(request)
         }
-
-        do {
-            return try await perform(request, decodeAs: T.self)
-        } catch let error as NetworkError {
-            // DEBUG log for the first failure (useful to understand retry reasons)
-            #if DEBUG
-            print("⚠️ Request failed:", error)
-            #endif
-
-            if let retryRequest = await retryIfPossible(original: request, error: error) {
-                #if DEBUG
-                print("🔁 Retrying request:", retryRequest.httpMethod ?? "??", retryRequest.url?.absoluteString ?? "nil")
-                #endif
-                return try await perform(retryRequest, decodeAs: T.self)
-            }
-
-            throw error
-        }
+        
+        return try await executeWithRetries(request: request, decodeAs: T.self)
     }
-
+    
     public func sendNoResponse(_ route: APIRouter) async throws {
         var request = try builder.build(route.endpoint)
         for i in interceptors {
             request = try await i.adapt(request)
         }
-
-        do {
-            _ = try await perform(request, decodeAs: EmptyResponse.self)
-        } catch let error as NetworkError {
-            #if DEBUG
-            print("⚠️ Request failed (no response expected):", error)
-            #endif
-
-            if let retryRequest = await retryIfPossible(original: request, error: error) {
-                #if DEBUG
-                print("🔁 Retrying request:", retryRequest.httpMethod ?? "??", retryRequest.url?.absoluteString ?? "nil")
-                #endif
-                _ = try await perform(retryRequest, decodeAs: EmptyResponse.self)
-                return
+        
+        _ = try await executeWithRetries(request: request, decodeAs: EmptyResponse.self)
+    }
+    
+        // MARK: - Internals
+    
+    private func executeWithRetries<T: Decodable>(request: URLRequest, decodeAs: T.Type) async throws -> T {
+        var currentRequest = request
+        
+        while true {
+            let startTime = Date()
+            do {
+                let result = try await perform(currentRequest, decodeAs: T.self)
+                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
+                
+                return result
+            } catch let error as NetworkError {
+                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
+                
+                for i in interceptors {
+                    await i.requestFailed(currentRequest, error: error, durationMs: durationMs)
+                }
+                
+#if DEBUG
+                print("⚠️ Request failed:", error)
+#endif
+                
+                if let retryRequest = await retryIfPossible(original: currentRequest, error: error) {
+#if DEBUG
+                    print("🔁 Retrying request:", retryRequest.httpMethod ?? "??", retryRequest.url?.absoluteString ?? "nil")
+#endif
+                    currentRequest = retryRequest
+                    continue
+                }
+                
+                throw error
             }
-
-            throw error
         }
     }
-
-    // MARK: - Internals
-
+    
     private func perform<T: Decodable>(_ request: URLRequest, decodeAs: T.Type) async throws -> T {
         let data: Data
         let response: URLResponse
-
+        let startTime = Date()
+        
         do {
             (data, response) = try await session.data(for: request)
         } catch let urlError as URLError {
@@ -93,32 +96,26 @@ public final class HTTPClient: @unchecked Sendable {
         } catch {
             throw NetworkError.unknown
         }
-
+        
         logger?.logResponse(request: request, response: response, data: data)
-
-        try validate(response: response, data: data)
-
+        
+        let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
+        try await validateAndNotify(request: request, response: response, data: data, durationMs: durationMs)
+        
         if T.self == EmptyResponse.self {
             return EmptyResponse() as! T
         }
-
-       
-
+        
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
-            #if DEBUG
+#if DEBUG
             print("❌ Decoding \(T.self) failed:", error)
-            if let s = String(data: data, encoding: .utf8) {
-                print("❌ Body:", s)
-            } else {
-                print("❌ Body: <non-utf8 \(data.count) bytes>")
-            }
-            #endif
+#endif
             throw NetworkError.decoding(error)
         }
     }
-
+    
     private func retryIfPossible(original: URLRequest, error: NetworkError) async -> URLRequest? {
         for i in interceptors {
             if let newRequest = await i.retry(original, dueTo: error, using: self) {
@@ -127,9 +124,14 @@ public final class HTTPClient: @unchecked Sendable {
         }
         return nil
     }
-
-    private func validate(response: URLResponse, data: Data) throws {
+    
+    private func validateAndNotify(request: URLRequest, response: URLResponse, data: Data, durationMs: Int) async throws {
         guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
+        
+        for i in interceptors {
+            await i.requestCompleted(request, response: http, data: data, durationMs: durationMs)
+        }
+        
         switch http.statusCode {
         case 200..<300:
             return

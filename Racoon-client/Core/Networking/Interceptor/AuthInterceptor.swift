@@ -12,7 +12,7 @@ public final class AuthInterceptor: HTTPInterceptor {
     private let refresher: TokenRefresher
     private let coordinator: RefreshCoordinator
     private let appErrorBus: AppErrorBus
-
+    
     public init(
         tokenStore: TokenStore,
         refresher: TokenRefresher,
@@ -24,54 +24,54 @@ public final class AuthInterceptor: HTTPInterceptor {
         self.appErrorBus = appErrorBus
         self.coordinator = coordinator
     }
-
+    
     public func adapt(_ request: URLRequest) async throws -> URLRequest {
-            guard let tokens = await tokenStore.readTokens() else {
-                print("❌ AuthInterceptor: No tokens found in TokenStore! Sending request naked.")
-                return request
-            }
-            
-            var req = request
-            req.setValue("Bearer \(tokens.accessToken)", forHTTPHeaderField: "Authorization")
-            
-            print("✅ AuthInterceptor: Successfully attached Bearer token to \(request.url?.path ?? "unknown path")")
-            return req
+        guard let tokens = await tokenStore.readTokens() else {
+            print("❌ AuthInterceptor: No tokens found in TokenStore! Sending request naked.")
+            return request
         }
-
+        
+        var req = request
+        req.setValue("Bearer \(tokens.accessToken)", forHTTPHeaderField: "Authorization")
+        
+        print("✅ AuthInterceptor: Successfully attached Bearer token to \(request.url?.path ?? "unknown path")")
+        return req
+    }
+    
     public func retry(
-            _ request: URLRequest,
-            dueTo error: NetworkError,
-            using client: HTTPClient
-        ) async -> URLRequest? {
-            guard case .unauthorized = error else { return nil }
+        _ request: URLRequest,
+        dueTo error: NetworkError,
+        using client: HTTPClient
+    ) async -> URLRequest? {
+        guard case .unauthorized = error else { return nil }
+        
+        print("⚠️ AuthInterceptor: 401 Received for \(request.url?.path ?? ""). Attempting token refresh...")
+        
+        guard let tokens = await tokenStore.readTokens() else { return nil }
+        
+        do {
+            let newTokens = try await coordinator.refreshIfNeeded(tokens: tokens, refresher: refresher)
             
-            print("⚠️ AuthInterceptor: 401 Received for \(request.url?.path ?? ""). Attempting token refresh...")
+            await tokenStore.clearTokens()
+            await tokenStore.saveTokens(newTokens)
             
-            guard let tokens = await tokenStore.readTokens() else { return nil }
-
-            do {
-                let newTokens = try await coordinator.refreshIfNeeded(tokens: tokens, refresher: refresher)
-                
-                await tokenStore.clearTokens()
-                await tokenStore.saveTokens(newTokens)
-
-                var retried = request
-                retried.setValue("Bearer \(newTokens.accessToken)", forHTTPHeaderField: "Authorization")
-                print("✅ AuthInterceptor: Refresh successful! Retrying request.")
-                return retried
-            } catch {
-                print("❌ AuthInterceptor: Refresh completely failed. Logging user out.")
-                await tokenStore.clearTokens()
-
-                appErrorBus.post(
-                    AppErrorState(
-                        title: "Session expired",
-                        message: "Please sign in again.",
-                        kind: .forceLogout
-                    )
+            var retried = request
+            retried.setValue("Bearer \(newTokens.accessToken)", forHTTPHeaderField: "Authorization")
+            print("✅ AuthInterceptor: Refresh successful! Retrying request.")
+            return retried
+        } catch {
+            print("❌ AuthInterceptor: Refresh completely failed. Logging user out.")
+            await tokenStore.clearTokens()
+            
+            appErrorBus.post(
+                AppErrorState(
+                    title: "Session expired",
+                    message: "Please sign in again.",
+                    kind: .forceLogout
                 )
-
-                return nil
-            }
+            )
+            
+            return nil
         }
+    }
 }

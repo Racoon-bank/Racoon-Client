@@ -9,31 +9,26 @@
 import Foundation
 
 public protocol DepositUseCase: Sendable {
-    func callAsFunction(accountId: UUID, amount: Decimal) async throws -> BankAccount
+    
+    func callAsFunction(accountId: UUID, amount: Decimal) async throws
 }
 
 public struct DepositUseCaseImpl: DepositUseCase {
     private let repo: CoreBankAccountRepository
     private let events: DomainEventBus
-    private let hiddenStorage: AppSettingsStorage
 
     public init(
         repo: CoreBankAccountRepository,
-        events: DomainEventBus = NoopDomainEventBus(),
-        hiddenStorage: AppSettingsStorage
+        events: DomainEventBus = NoopDomainEventBus()
     ) {
         self.repo = repo
         self.events = events
-        self.hiddenStorage = hiddenStorage
     }
 
-    public func callAsFunction(accountId: UUID, amount: Decimal) async throws -> BankAccount {
-        let dto = try await repo.deposit(id: accountId, amount: (amount as NSDecimalNumber).doubleValue)
-        let hiddenIds = hiddenStorage.load().hiddenAccountIds
-        
-        let domain = BankAccountMapper.toDomain(dto, hiddenAccountIds: hiddenIds)
+    public func callAsFunction(accountId: UUID, amount: Decimal) async throws {
+
+        try await repo.deposit(id: accountId, amount: (amount as NSDecimalNumber).doubleValue)
         
         await events.publish(.moneyDeposited(accountId: accountId, amount: amount))
-        return domain
     }
 }

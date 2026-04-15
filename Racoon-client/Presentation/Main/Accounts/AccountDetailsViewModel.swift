@@ -95,25 +95,28 @@ final class AccountDetailsViewModel: ObservableObject {
     }
 
     func makeDeposit(amount: Decimal) async {
-        state = .loading
-        do {
-            _ = try await deposit(accountId: accountId, amount: amount)
-            try await reloadAccountAndHistory()
-            state = .idle
-        } catch {
-            state = .error(message: "Deposit failed.")
-        }
-    }
-
+         state = .loading
+         do {
+          
+             try await deposit(accountId: accountId, amount: amount)
+             try await reloadAccountAndHistory()
+             state = .idle
+         } catch {
+             state = .error(message: "Deposit failed.")
+         }
+     }
+    
+    
     func makeWithdraw(amount: Decimal) async {
-        state = .loading
-        do {
-            _ = try await withdraw(accountId: accountId, amount: amount)
-            try await reloadAccountAndHistory()
-            state = .idle
-        } catch {
-            state = .error(message: "Withdraw failed.")
-        }
+            state = .loading
+            do {
+                
+                try await withdraw(accountId: accountId, amount: amount)
+                try await reloadAccountAndHistory()
+                state = .idle
+            } catch {
+                state = .error(message: "Withdraw failed.")
+            }
     }
     
     func makeTransfer(to targetAccountNumber: String, amount: Decimal) async {

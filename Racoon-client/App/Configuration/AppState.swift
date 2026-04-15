@@ -5,9 +5,8 @@
 //  Created by dark type on 27.02.2026.
 //
 
-
-import SwiftUI
 import Combine
+import SwiftUI
 
 @MainActor
 final class AppState: ObservableObject {
@@ -28,7 +27,7 @@ final class AppState: ObservableObject {
         self.container = container
 
         Task {
-            for await error in await container.appErrorBus.stream() {
+            for await error in container.appErrorBus.stream() {
                 self.handleAppError(error)
             }
         }
@@ -51,14 +50,14 @@ final class AppState: ObservableObject {
 
     func bootstrap() async {
         let tokens = await container.tokenStore.readTokens()
-        
+
         if tokens == nil {
             session = .unauthenticated
         } else {
             session = .authenticated
-            
+
             _ = try? await container.syncThemeFromProfileUseCase()
-            
+
             await container.bankHubClient.connect()
         }
     }

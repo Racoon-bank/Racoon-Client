@@ -120,25 +120,35 @@ public struct NetworkingAssembly: Sendable {
     public func makeAuthedHTTPClient(
         tokenStore: TokenStore,
         tokenRefresher: any TokenRefresher,
-        appErrorBus: AppErrorBus,
-       
+        appErrorBus: AppErrorBus
     ) -> HTTPClient {
         let encoder = makeJSONEncoder()
         let decoder = makeJSONDecoder()
         let builder = DefaultRequestBuilder(env: env, encoder: encoder)
-
+        
         let authInterceptor = AuthInterceptor(
             tokenStore: tokenStore,
             refresher: tokenRefresher,
             appErrorBus: appErrorBus,
             coordinator: RefreshCoordinator()
         )
-
-        #if DEBUG
-        let logger = NetworkLoggerInterceptor(enabled: true)
-        return HTTPClient(builder: builder, decoder: decoder, interceptors: [logger, authInterceptor])
-        #else
-        return HTTPClient(builder: builder, decoder: decoder, interceptors: [authInterceptor])
-        #endif
+        
+        let idempotencyInterceptor = IdempotencyInterceptor()
+        let circuitBreakerInterceptor = CircuitBreakerInterceptor(appErrorBus: appErrorBus)
+        let monitoringInterceptor = MonitoringInterceptor(serviceName: "iOS-HitsClient")
+        
+        var interceptors: [HTTPInterceptor] = [
+            idempotencyInterceptor,
+            authInterceptor,
+            circuitBreakerInterceptor,
+            monitoringInterceptor
+        ]
+        
+#if DEBUG
+        interceptors.insert(NetworkLoggerInterceptor(enabled: true), at: 0)
+#endif
+        
+        return HTTPClient(builder: builder, decoder: decoder, interceptors: interceptors)
     }
+
 }
